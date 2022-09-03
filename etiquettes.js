@@ -218,7 +218,7 @@ function litDate(dateString) {
  * @param {*} comitiData donnes comiti
  * @returns donnes agrégées par membre
  */
-function makeDonneesMembres(comitiData) {
+function makeDonneesMembres(data, comitiData) {
   membres = {};
   for (row of comitiData) {
     id = row["Numéro Comiti"];
@@ -233,7 +233,9 @@ function makeDonneesMembres(comitiData) {
     m = {
       id: id,
       nom: rows[0]["Nom"] + " " + rows[0]["Prénom"],
-      creneaux: rows.map((r) => r["Catégorie"]),
+      creneaux: rows
+        .map((r) => r["Catégorie"])
+        .filter((c) => data.sansEtiquette.indexOf(c) < 0),
       dateInscr: Math.min(
         ...rows.map((r) => r["Date de inscription"]).map(litDate)
       ),
@@ -255,7 +257,7 @@ function membresPourCategorieActivite(data) {
   if (data.comiti === undefined) {
     return [];
   }
-  membres = Object.values(makeDonneesMembres(data.comiti));
+  membres = Object.values(makeDonneesMembres(data, data.comiti));
   let filterFunction;
   if (categorie !== undefined && categorie !== "tout") {
     console.log("filtering wrt categorie " + categorie);
