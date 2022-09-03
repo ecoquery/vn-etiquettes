@@ -2,6 +2,19 @@
 // Impr par ordre alpha par activite
 // prévoir d'imprimer en plusieurs fois
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Fonctions liées à l'impression
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Génère une étiquette à imprimer
+ * @param {*} nom nom de l'adhérent
+ * @param {*} creneaux créneaux pris par l'adhérent
+ * @param {*} saison saison à afficher sur la carte
+ * @returns le code xml de l'étiquette
+ */
 function genereLabelContent(nom, creneaux, saison) {
   // - creneaux: liste des creneaux (acronyme jour heure piscine). si plusieurs creneaux, utiliser \n
   // - saison: annee scolaire, e.g. 2021 / 2022
@@ -142,6 +155,64 @@ function genereLabelContent(nom, creneaux, saison) {
     `;
 }
 
+// loads all supported printers into a combo box
+function loadPrinters() {
+  let printers = dymo.label.framework.getPrinters();
+  if (printers.length == 0) {
+    console.log("No DYMO printers are installed. Install DYMO printers.");
+    return [];
+  }
+
+  return printers
+    .filter((p) => p.printerType == "LabelWriterPrinter")
+    .map((p) => p.name);
+}
+
+/**
+ * Lance les impressions concernant les membres affichés
+ * @param {*} data les données de l'application
+ * @param {*} membres liste des membres à imprimer
+ * @param {bool} onlyPreview ne pas imprimer, simplement changer l'affichage
+ * @param {number} tempo attente entre deux impressions
+ * @param {*} idx indice à partir duquel imprimer les membres
+ */
+function printAll(data, membres, onlyPreview, tempo, idx) {
+  console.log("Printing", membres, idx);
+  if (idx === undefined) {
+    idx = 0;
+  }
+  if (idx >= membres.length) {
+    return;
+  }
+  data.membreAffiche = membres[idx];
+  updatePage(data);
+  if (!onlyPreview) {
+    let label = dymo.label.framework.openLabelXml(labelData);
+    label.print(data.printers[0]);
+  }
+  setTimeout(() => printAll(data, membres, onlyPreview, tempo, idx + 1), tempo);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Fonctions liées aux données de l'application
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Lit une date extraite de comiti
+ * @param {string} dateString date au format dd-mm-YYY
+ * @return {Date} la date lue
+ */
+function litDate(dateString) {
+  if (dateString) {
+    [d, m, y, ..._] = dateString.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  } else {
+    return undefined;
+  }
+}
+
 /**
  * Données de chaque membre pour générer les étiquettes
  * @param {*} comitiData donnes comiti
@@ -163,6 +234,9 @@ function makeDonneesMembres(comitiData) {
       id: id,
       nom: rows[0]["Nom"] + " " + rows[0]["Prénom"],
       creneaux: rows.map((r) => r["Catégorie"]),
+      dateInscr: Math.min(
+        ...rows.map((r) => r["Date de inscription"]).map(litDate)
+      ),
     };
     result[id] = m;
   }
@@ -170,18 +244,20 @@ function makeDonneesMembres(comitiData) {
 }
 
 /**
- *
+ * Filtre les membres pour la sélection d'activité /  de catégorie en cours
  * @param {*} data les donnes de l'application
  * @param {*} categorie la categorie sélectionnée ou undefined
  * @param {*} activite l'activité selectionnée
  */
-function membresPourCategorieActivite(data, categorie, activite) {
+function membresPourCategorieActivite(data) {
+  categorie = data.categorie;
+  activite = data.activite;
   if (data.comiti === undefined) {
     return [];
   }
   membres = Object.values(makeDonneesMembres(data.comiti));
   let filterFunction;
-  if (categorie !== undefined) {
+  if (categorie !== undefined && categorie !== "tout") {
     console.log("filtering wrt categorie " + categorie);
     filterFunction = (m) => m.creneaux.some((c) => c === categorie);
   } else if (activite !== undefined) {
@@ -189,10 +265,12 @@ function membresPourCategorieActivite(data, categorie, activite) {
     filterFunction = (m) =>
       m.creneaux.some((c) => data.categorieActivite[c] === activite);
   } else {
-    console.log("No filter");
-    filterFunction = (m) => true;
+    // console.log("Nobody");
+    filterFunction = (m) => false;
   }
-  result = membres.filter(filterFunction);
+  filterFrom = data.from ? (m) => m.dateInscr >= data.from : (m) => true;
+  filterTo = data.to ? (m) => m.dateInscr <= data.to : (m) => true;
+  result = membres.filter(filterFunction).filter(filterFrom).filter(filterTo);
   return result;
 }
 
@@ -217,78 +295,6 @@ function addCategorieActiviteMapping(data) {
       }
     }
     data.categorieActivite = m;
-  }
-}
-
-/**
- * Sauve un fichier.
- * @param {String} name Le nom du fichier à sauver
- * @param {String} content Le contenu du fichier
- */
-function saveFile(name, content) {
-  var blob = new Blob([content], {
-    type: "text/plain;charset=utf-8",
-  });
-  saveAs(blob, name);
-}
-
-/**
- * Mets à jour les données de l'application en fonction des données reçues dans comiti
- * @param {*} data les données de l'application
- * @param {*} comitiData les données issues de comiti
- */
-function updateComitiData(data, comitiData) {
-  console.log(`Le fichier comiti contient ${comitiData.length} lignes`);
-  data.comiti = comitiData;
-  addCategorieActiviteMapping(data);
-  updatePage(data);
-}
-
-/**
- * Charge le fichier comiti indiqué dans le formulaire
- * @param {*} data Le données de l'application
- */
-function loadComitiFile(data, fileElt) {
-  if (fileElt.files.length > 0) {
-    console.log("Loading comiti file");
-    Papa.parse(fileElt.files[0], {
-      complete: function (results) {
-        updateComitiData(data, results.data);
-      },
-      header: true,
-    });
-  } else {
-    console.log("No comiti file selected");
-  }
-}
-
-function registerComitiFileAction(data) {
-  fileElt = document.getElementById("file-comiti");
-  fileElt.onchange = function () {
-    loadComitiFile(data, fileElt);
-  };
-}
-
-/**
- * Enregistre les actions du bouton "Générer"
- */
-function registerBtnGenerer() {
-  document.getElementById("btn-generer").onclick = () => {
-    saveFile("toto.txt", "toto");
-  };
-}
-
-/**
- * Mets à jour la zone d'informations sur le fichier comiti
- * @param {*} data les données de l'application
- */
-function updateComitiInfos(data) {
-  comitiInfos = document.getElementById("z-comiti-infos");
-  // console.debug(`Updating comiti infos with ${data.comiti}`);
-  if (data.comiti !== undefined) {
-    comitiInfos.innerHTML = `${data.comiti.length} inscriptions`;
-  } else {
-    comitiInfos.innerHTML = "";
   }
 }
 
@@ -322,19 +328,126 @@ function getActivites(comitiData) {
 }
 
 /**
+ * Affiche dans la console les catégories qui ne sont pas mappées dans le
+ * dictionnaire afficheCrenaux.
+ * @param {*} data les données de l'application
+ */
+function logCategorieManquantesDansAfficheCreneaux(data) {
+  data.categories
+    .filter((c) => data.afficheCreneaux[c] === undefined)
+    .filter((c) => data.sansEtiquette.indexOf(c) < 0)
+    .forEach((c) => console.log("Description print manquante: ", c));
+}
+
+/**
+ * Mets à jour les données de l'application en fonction des données reçues dans comiti
+ * @param {*} data les données de l'application
+ * @param {*} comitiData les données issues de comiti
+ */
+function updateComitiData(data, comitiData) {
+  // TODO
+  console.log(`Le fichier comiti contient ${comitiData.length} lignes`);
+  data.comiti = comitiData;
+  addCategorieActiviteMapping(data);
+  data.activites = getActivites(comitiData);
+  data.categories = getCategories(comitiData);
+  logCategorieManquantesDansAfficheCreneaux(data);
+  updatePage(data);
+}
+
+/**
+ * Recalcule les données intermédiaires de l'application
+ * @param {*} data les données de l'application
+ */
+function updateApplicationData(data) {
+  // selectedActivity = document.getElementById("select-activite").value;
+  // data.activite = selectedActivity ? selectedActivity : "Aucune";
+  // selectedCategorie = document.getElementById("select-categorie").value;
+  // data.categorie = selectedCategorie ? selectedCategorie : "tout";
+  membres = membresPourCategorieActivite(data, data.categorie, data.activite);
+  membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
+  data.membres = membres.map((m) => ({
+    ...m,
+    creneaux: m.creneaux.map((c) =>
+      data.afficheCreneaux[c] !== undefined ? data.afficheCreneaux[c] : c
+    ),
+  }));
+  if (data.activite === "Aucune" || data.activite === undefined) {
+    console.log("Pas d'étiquette");
+    data.membreAffiche = undefined;
+  } else if (
+    data.membreAffiche === undefined ||
+    data.membres.every((m) => m.id != data.membreAffiche.id)
+  ) {
+    console.log(`activite dans update: ${data.activite}`);
+    data.membreAffiche = data.membres[0];
+  }
+}
+
+/**
+ * Charge le fichier comiti indiqué dans le formulaire
+ * @param {*} data Le données de l'application
+ */
+function loadComitiFile(data, fileElt) {
+  if (fileElt.files.length > 0) {
+    console.log("Loading comiti file");
+    Papa.parse(fileElt.files[0], {
+      complete: function (results) {
+        updateComitiData(data, results.data);
+      },
+      header: true,
+    });
+  } else {
+    console.log("No comiti file selected");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Fonctions liées à l'interface
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Enregistre un callback appelé lors du chargement du fichier comiti
+ * @param {*} data données de l'application
+ */
+function registerComitiFileAction(data) {
+  fileElt = document.getElementById("file-comiti");
+  fileElt.onchange = function () {
+    loadComitiFile(data, fileElt);
+  };
+}
+
+/**
+ * Mets à jour la zone d'informations sur le fichier comiti
+ * @param {*} data les données de l'application
+ */
+function updateComitiInfos(data) {
+  comitiInfos = document.getElementById("z-comiti-infos");
+  // console.debug(`Updating comiti infos with ${data.comiti}`);
+  if (data.comiti !== undefined) {
+    comitiInfos.innerHTML = `(${data.comiti.length} inscriptions)`;
+  } else {
+    comitiInfos.innerHTML = "";
+  }
+}
+
+/**
  * Mets à jour le menu des catégories en fonction du csv
  * @param {*} data les données de l'application
  */
 function updateCategorieSelect(data) {
-  console.log(data);
   let catagoriesSelect = document.getElementById("select-categorie");
   let content;
   if (data.comiti === undefined) {
     content = `<option selected="selected">Aucune</option>`;
   } else {
-    activite = document.getElementById("select-activite").value;
-    console.log(activite);
-    content = getCategories(data.comiti)
+    activite = data.activite;
+    content = `<option ${
+      data.categorie === "tout" ? `selected="selected"` : ""
+    }>tout</option>`;
+    content += data.categories //getCategories(data.comiti)
       .filter((c) => data.categorieActivite[c] === activite)
       .map(
         (c) =>
@@ -347,6 +460,7 @@ function updateCategorieSelect(data) {
   catagoriesSelect.innerHTML = content;
   catagoriesSelect.onchange = () => {
     data.categorie = catagoriesSelect.value;
+    data.membreAffiche = undefined;
     updatePage(data);
   };
 }
@@ -361,11 +475,13 @@ function updateActiviteSelect(data) {
   if (data.comiti === undefined) {
     content = `<option selected="selected">Aucune</option>`;
   } else {
-    activites = getActivites(data.comiti);
+    activites = data.activites;
     if (data.activite === undefined) {
-      data.activite = activites[0];
+      data.activite = "Aucune"; //activites[0];
+      data.categorie = "tout";
     }
-    content = activites
+    content = `<option >Aucune</option>`;
+    content += activites
       .map(
         (c) =>
           `<option id="${c}" ${
@@ -377,6 +493,7 @@ function updateActiviteSelect(data) {
   activiteSelect.innerHTML = content;
   activiteSelect.onchange = () => {
     data.activite = activiteSelect.value;
+    data.categorie = "tout";
     updatePage(data);
   };
 }
@@ -393,9 +510,13 @@ function updateTableMembres(data) {
     document.getElementById("tbody-membres").innerHTML = membres
       .map(
         (m) =>
-          `<tr id="ligne-membre-${m.id}"><td>${m.id}</td><td>${
-            m.nom
-          }</td><td>${m.creneaux.join(", ")}</td></tr>`
+          `<tr id="ligne-membre-${m.id}" class="${
+            data.membreAffiche && data.membreAffiche.id === m.id
+              ? "selectionne"
+              : ""
+          }"><td>${m.id}</td><td>${m.nom}</td><td>${m.creneaux.join(
+            ", "
+          )}</td></tr>`
       )
       .join("");
     membres.forEach((m) => {
@@ -417,34 +538,25 @@ function updatePreview(data) {
     labelData = genereLabelContent(m.nom, m.creneaux.join("\n"), "2022 / 2023");
     let label = dymo.label.framework.openLabelXml(labelData);
     let pngData = label.render();
+    document.getElementById("preview").innerHTML = `<img id="previewImage">`;
     let labelImage = document.getElementById("previewImage");
     labelImage.src = "data:image/png;base64," + pngData;
     document.getElementById("btn-print").onclick = () => {
       label.print(data.printers[0]);
     };
+  } else {
+    document.getElementById("preview").innerHTML = "";
   }
 }
 
 /**
- * Met à jour le champ membresAffiches dans data
+ * Enregistre le callback sur le clic pour tout imprimer
+ * @param {*} data les données de l'application
  */
-function updateListeMembres(data) {
-  categorie = document.getElementById("select-categorie").value;
-  activite = data.activite;
-  membres = membresPourCategorieActivite(data, categorie, activite);
-  membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
-  data.membres = membres.map((m) => ({
-    ...m,
-    creneaux: m.creneaux.map((c) =>
-      data.afficheCreneaux[c] !== undefined ? data.afficheCreneaux[c] : c
-    ),
-  }));
-  if (
-    data.membreAffiche === undefined ||
-    data.membres.every((m) => m.id != data.membreAffiche.id)
-  ) {
-    data.membreAffiche = data.membres[0];
-  }
+function registerPrintAll(data) {
+  document.getElementById("btn-print-all").onclick = () => {
+    printAll(data, data.membres, true, 2000);
+  };
 }
 
 /**
@@ -452,50 +564,143 @@ function updateListeMembres(data) {
  * @param {*} data Le données de l'application
  */
 function updatePage(data) {
-  updateListeMembres(data);
-  registerBtnGenerer();
+  updateApplicationData(data);
   registerComitiFileAction(data);
   updateComitiInfos(data);
   updateActiviteSelect(data);
   updateCategorieSelect(data);
   updateTableMembres(data);
   updatePreview(data);
+  registerPrintAll(data);
 }
 
-// loads all supported printers into a combo box
-function loadPrinters() {
-  let printers = dymo.label.framework.getPrinters();
-  if (printers.length == 0) {
-    console.log("No DYMO printers are installed. Install DYMO printers.");
-    return [];
-  }
-
-  return printers
-    .filter((p) => p.printerType == "LabelWriterPrinter")
-    .map((p) => p.name);
-
-  // for (var i = 0; i < printers.length; i++) {
-  //     var printer = printers[i];
-  //     if (printer.printerType == "LabelWriterPrinter") {
-  //         var printerName = printer.name;
-
-  //         var option = document.createElement('option');
-  //         option.value = printerName;
-  //         option.appendChild(document.createTextNode(printerName));
-  //         printersSelect.appendChild(option);
-  //     }
-  // }
+/**
+ * Mets en place les calendriers pour les dates de sélection des inscriptions
+ * @param {*} data les données de l'application
+ */
+function setupDatePickers(data) {
+  let options = {
+    autohide: true,
+    clearBtn: true,
+    format: "dd/mm/yyyy",
+    todayBtn: true,
+    todayHighlight: true,
+    weekStart: 1,
+  };
+  let inputFrom = document.getElementById("date-from");
+  let dateFrom = new Datepicker(inputFrom, options);
+  let inputTo = document.getElementById("date-to");
+  let dateTo = new Datepicker(inputTo, options);
+  inputFrom.addEventListener("changeDate", () => {
+    data.from = dateFrom.getDate();
+    updatePage(data);
+  });
+  inputTo.addEventListener("changeDate", () => {
+    data.to = dateTo.getDate();
+    updatePage(data);
+  });
+  data.from = dateFrom.getDate();
+  data.to = dateTo.getDate();
 }
 
 // Actions à effectuer au démarrage de l'application
 document.addEventListener("DOMContentLoaded", function () {
   let data = {
     afficheCreneaux: {
-      "ADU1 - 3/4 nages": "ADU1 - Lun 07h00 - CNEG",
+      "ADO - A1-1 - 14-17 ans - Maitrise 1-2 nages":
+        "A1-1 - Me 20h - Boulloche",
+      "ADO - A1-2 - 14-17 ans - Maitrise 1-2 nages":
+        "A1-2 - Ve 20h - Boulloche",
+      "ADO - A2-1 - 14-17 ans - Maitrise 3-4 nages":
+        "A2-1 - Me 20h - Boulloche",
+      "ADO - A2-2 - 14-17 ans - Maitrise 3-4 nages": "A2-2 - Me 16h - CNEG",
+      "ADO - A2-3 - 14-17 ans - Maitrise 3-4 nages": "A2-3 - Me 17h - CNEG",
+      "ADO - A2-4 - 14-17 ans - Maitrise 3-4 nages": "A2-4 - Ve 20h - CNEG",
+      "ADU1 - 3/4 nages": "ADU1 - Lu 07h - CNEG",
+      "ADU2 - 1/2 nages": "ADU2 - Lu 12h30 - Boulloche",
+      "ADU3 - 3-4 nages": "ADU3 - Lu 12h30 - Boulloche",
+      "ADU4 - 1/2 nages": "ADU4 - Lu 21h - CNEG",
+      "ADU5 -3-4 nages": "ADU5 - Lu 21h - CNEG",
+      "ADU6 - 3-4 nages": "AD6 - Ma 12h - CNEG",
+      "ADU7 - 3-4 nages": "ADU7 - Ma 20h - CNEG",
+      "ADU8 - 1-2 nages": "ADU8 - Ma 20h - CNEG",
+      "ADU9 - 1-2 nages": "ADU9 - Me 20h - CNEG",
+      "ADU10 -3-4 nages": "ADU10 - Me 20h - CNEG",
+      "ADU11 3-4 nages": "ADU11 - Me 21h - CNEG",
+      "ADU12 - 3/4 nages": "ADU12 - Me 21h - CNEG",
+      "ADU13 - 1-2 nages": "ADU13 - Je 20h - Boulloche",
+      "ADU14 - 3-4 nages": "ADU14 - Je 20h - Boulloche",
+      "ADU15 - 3/4 nages": "ADU15 - Ve 07h - CNEG",
+      "ADU16 -1-2 nages": "ADU16 - Ve 11h30 - Boulloche",
+      "ADU17 -3/4 nages": "ADU17 - Ve 11h30 - Boulloche",
+      "ADU18 - 1-2 nages": "ADU18 - Ve 12h30 - Boulloche",
+      "ADU19 - 3/4 nages": "ADU19 - Ve 12h30 - Boulloche",
+      "ADU20 - 1-2 nages": "ADU20 - Ve 20h - CNEG",
+      "ADU21 - 3/4 nages": "ADU21 - Ve 20h - CNEG",
+      "ADULTES DEBUTANTS -DEB1": "DEB1 - Je 20h - Boulloche",
+      "Dauphin Bronze - DB15 - 5-6 ans": "DB15 - Sa 11h - Boulloche",
+      "Dauphin Bronze - DB16 - 7-8 ans": "DB16 - Sa 12h - Boulloche",
+      "DAUPHIN BRONZE -DB17- 5-6 ANS": "DB17 - Sa 13h - Boulloche",
+      "DAUPHIN BRONZE -DB18- 7-8 ANS": "DB18 - Sa 13h - Boulloche",
+      "Dauphin Argent - DA9": "DA9 - Sa 11h - Boulloche",
+      "Dauphin Argent - DA10": "DA10 - Sa 12h - Boulloche",
+      "Dauphin Argent - DA11": "DA11 - Sa 13h - Boulloche",
+      "Dauphin Argent - DA12": "DA12 - Sa 13h45 - Boulloche",
+      "Dauphin Or - DO1": "DO1 - Me 15h - Boulloche",
+      "Dauphin Or - DO2": "DO2 - Sa 11h - Boulloche",
+      Elite: "Elite",
+      "Espoir 1": "Espoir 1",
+      "Espoir 2": "Espoir 2",
+      "Espoir 3": "Espoir 3",
+      "Groupe départemental": "Groupe départemental",
+      "Jeunes - J1-2 - 10-13 ans - Maitrise 1-2 nages":
+        "J1-2 - Me 20h - Boulloche",
+      "Jeunes - J1-4 - 10-13 ans - Maitrise 1-2 nages":
+        "J1-4 - Ve 20h - Boulloche",
+      "Jeunes - J1-5 - 10-13 ans - Maitrise 1-2 nages":
+        "J1-5 - Sa 12h - Boulloche",
+      "Jeunes - J2-1 - 10-13 ans - Maitrise 3-4 nages":
+        "J2-1 - Me 20h - Boulloche",
+      "Jeunes - J2-2 - 10-13 ans - Maitrise 3-4 nages": "J2-2 - Me 15h - CNEG",
+      "Jeunes - J2-3 - 10-13 ans - Maitrise 3-4 nages": "J2-3 - Me 16h - CNEG",
+      "Jeunes - J2-4 - 10-13 ans - Maitrise 3-4 nages":
+        "J2-4 - Sa 12h - Boulloche",
+      MAÎTRES: "MAÎTRES",
+      Relève: "Relève",
     },
+    sansEtiquette: [
+      "ADULTES DEBUTANTS -DEB2",
+      "Dauphin Argent - DA1",
+      "Dauphin Argent - DA2",
+      "Dauphin Argent - DA3",
+      "Dauphin Argent - DA4",
+      "Dauphin Argent - DA5",
+      "Dauphin Argent - DA6",
+      "Dauphin Argent - DA7",
+      "Dauphin Argent - DA8",
+      "Dauphin Bronze - DB10 - 5-6 ans",
+      "Dauphin Bronze - DB11 - 7-8 ans",
+      "Dauphin Bronze - DB12 - 5-6 ans",
+      "Dauphin Bronze - DB13 - 7-8 ans",
+      "Dauphin Bronze - DB14 - 5-6 ans",
+      "Dauphin Bronze - DB1 - 5-6 ans",
+      "Dauphin Bronze - DB2 - 5-6 ans",
+      "Dauphin Bronze - DB3 - 5-6 ans",
+      "Dauphin Bronze - DB4 - 7-8 ans",
+      "Dauphin Bronze - DB5 - 7-8 ans",
+      "Dauphin Bronze - DB6 - 5-6 ans",
+      "Dauphin Bronze - DB7 - 7-8 ans",
+      "Dauphin Bronze - DB8 - 7-8 ans",
+      "Dauphin Bronze - DB9 - 5-6 ans",
+      "Jeunes - J1-1 - 10-13 ans - Maitrise 1-2 nages",
+      "Jeunes - J1-3 - 10-13 ans - Maitrise 1-2 nages",
+      "Membre CA",
+      "Officiel",
+    ],
     membreAffiche: undefined,
     printers: loadPrinters(),
   };
+  setupDatePickers(data);
   console.log(data);
   updatePage(data);
   loadComitiFile(data, document.getElementById("file-comiti"));

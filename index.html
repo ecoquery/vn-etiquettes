@@ -1,33 +1,70 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Générateur de carnet d'adresses</title>
-    </head>
-    <body>
-        <h1>Générateur de carnet d'adresses</h1>
-        <form>
-            <p><label for="file-comiti">Fichier comiti:</label>
-                <input type="file" id="file-comiti"></p>
-            <p><span id="z-comiti-infos"></span></p>
-            <p>
-                <label for="select-activite">Activité:</label>
-                <select id="select-activite"><option selected="selected">Aucune</option></select>
-                <label for="select-categorie">Catégorie:</label>
-                <select id="select-categorie"><option selected="selected">Aucune</option></select>
-            </p>
-            <p><input type="button" value="Générer" id = "btn-generer"></p>
-        </form>
-        <div>
-            <table>
-                <thead><tr><th>Numéro comiti</th><th>Nom</th><th>Créneaux</th></tr></thead>
-                <tbody id="tbody-membres"></tbody>
-            </table>
-        </div>
-        <div id="preview"><img id="previewImage"></div>
-        <div><button id="btn-print" value="Imprimer">Imprimer</button></div>
-        <script src="libs/DYMO.Label.Framework.3.0.js" type="text/javascript" ></script>
-        <script src="libs/papaparse.js" type="text/javascript" ></script>
-        <script src="libs/FileSaver.js" type="text/javascript" ></script>
-        <script src="etiquettes.js" type="text/javascript" ></script>
-    </body>
+  <head>
+    <title>Générateur de carnet d'adresses</title>
+    <link rel="stylesheet" href="libs/datepicker.min.css" />
+    <style>
+      .selectionne {
+        background: rgb(112, 183, 201);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Générateur de carnet d'adresses</h1>
+    <form>
+      <p>
+        <label for="file-comiti">Fichier comiti:</label>
+        <input type="file" id="file-comiti" />
+        <span id="z-comiti-infos"></span>
+      </p>
+      <p>
+        Inscriptions du
+        <input type="text" id="date-from" /> au
+        <input type="text" id="date-to" />
+      </p>
+
+      <p>
+        <label for="select-activite">Activité:</label>
+        <select id="select-activite">
+          <option selected="selected">Aucune</option>
+        </select>
+        <label for="select-categorie">Catégorie:</label>
+        <select id="select-categorie">
+          <option selected="selected">Aucune</option>
+        </select>
+      </p>
+    </form>
+    <div style="float: right">
+      <div id="preview"></div>
+      <div>
+        <button id="btn-print" value="print-one">
+          Imprimer cette étiquette
+        </button>
+      </div>
+      <div>
+        <button id="btn-print-all" value="print-all">
+          Imprimer toutes les inscriptions visibles
+        </button>
+      </div>
+    </div>
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Numéro comiti</th>
+            <th>Nom</th>
+            <th>Créneaux</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-membres"></tbody>
+      </table>
+    </div>
+    <script src="libs/datepicker-full.min.js" type="text/javascript"></script>
+    <script
+      src="libs/DYMO.Label.Framework.3.0.js"
+      type="text/javascript"
+    ></script>
+    <script src="libs/papaparse.js" type="text/javascript"></script>
+    <script src="etiquettes.js" type="text/javascript"></script>
+  </body>
 </html>
