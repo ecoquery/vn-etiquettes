@@ -174,23 +174,34 @@ function loadPrinters() {
  * @param {*} membres liste des membres à imprimer
  * @param {bool} onlyPreview ne pas imprimer, simplement changer l'affichage
  * @param {number} tempo attente entre deux impressions
+ * @param {number} remain nombre d'étiquettes à imprimer
  * @param {*} idx indice à partir duquel imprimer les membres
  */
-function printAll(data, membres, onlyPreview, tempo, idx) {
+function printAll(data, membres, onlyPreview, tempo, remain, idx) {
   console.log("Printing", membres, idx);
   if (idx === undefined) {
     idx = 0;
   }
-  if (idx >= membres.length) {
+  if (idx >= membres.length || remain <= 0) {
+    return;
+  }
+  if (data.stopPrint) {
+    data.stopPrint = false;
+    updatePage(data);
     return;
   }
   data.membreAffiche = membres[idx];
   updatePage(data);
-  if (!onlyPreview) {
+  console.log("Only preview: ", data.onlyPreview);
+  if (!data.onlyPreview) {
     let label = dymo.label.framework.openLabelXml(labelData);
+    console.log(label, data.printers);
     label.print(data.printers[0]);
   }
-  setTimeout(() => printAll(data, membres, onlyPreview, tempo, idx + 1), tempo);
+  setTimeout(
+    () => printAll(data, membres, onlyPreview, tempo, remain - 1, idx + 1),
+    tempo
+  );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -353,6 +364,7 @@ function updateComitiData(data, comitiData) {
   addCategorieActiviteMapping(data);
   data.activites = getActivites(comitiData);
   data.categories = getCategories(comitiData);
+  data.updatedList = true;
   logCategorieManquantesDansAfficheCreneaux(data);
   updatePage(data);
 }
@@ -362,10 +374,6 @@ function updateComitiData(data, comitiData) {
  * @param {*} data les données de l'application
  */
 function updateApplicationData(data) {
-  // selectedActivity = document.getElementById("select-activite").value;
-  // data.activite = selectedActivity ? selectedActivity : "Aucune";
-  // selectedCategorie = document.getElementById("select-categorie").value;
-  // data.categorie = selectedCategorie ? selectedCategorie : "tout";
   membres = membresPourCategorieActivite(data, data.categorie, data.activite);
   membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
   data.membres = membres.map((m) => ({
@@ -383,6 +391,16 @@ function updateApplicationData(data) {
   ) {
     console.log(`activite dans update: ${data.activite}`);
     data.membreAffiche = data.membres[0];
+  }
+  if (data.updatedList) {
+    data.updatedList = false;
+    let idx =
+      data.membreAffiche === undefined
+        ? -1
+        : data.membres.map((m) => m.id).indexOf(data.membreAffiche.id);
+    idx = Math.max(idx, 0);
+    data.nbPrint = data.membres.length - idx;
+    data.printFrom = idx;
   }
 }
 
@@ -463,6 +481,7 @@ function updateCategorieSelect(data) {
   catagoriesSelect.onchange = () => {
     data.categorie = catagoriesSelect.value;
     data.membreAffiche = undefined;
+    data.updatedList = true;
     updatePage(data);
   };
 }
@@ -496,6 +515,7 @@ function updateActiviteSelect(data) {
   activiteSelect.onchange = () => {
     data.activite = activiteSelect.value;
     data.categorie = "tout";
+    data.updatedList = true;
     updatePage(data);
   };
 }
@@ -524,6 +544,7 @@ function updateTableMembres(data) {
     membres.forEach((m) => {
       document.getElementById(`ligne-membre-${m.id}`).onclick = () => {
         data.membreAffiche = membres.filter((m2) => m2.id === m.id)[0];
+        data.updatedList = true;
         updatePage(data);
       };
     });
@@ -544,7 +565,9 @@ function updatePreview(data) {
     let labelImage = document.getElementById("previewImage");
     labelImage.src = "data:image/png;base64," + pngData;
     document.getElementById("btn-print").onclick = () => {
-      label.print(data.printers[0]);
+      if (!data.onlyPreview) {
+        label.print(data.printers[0]);
+      }
     };
   } else {
     document.getElementById("preview").innerHTML = "";
@@ -557,7 +580,54 @@ function updatePreview(data) {
  */
 function registerPrintAll(data) {
   document.getElementById("btn-print-all").onclick = () => {
-    printAll(data, data.membres, true, 2000);
+    printAll(data, data.membres, true, 2000, data.nbPrint, data.printFrom);
+  };
+}
+
+/**
+ * Mets à jour l'affichage du bouton d'impression.
+ * @param {*} data les données de l'application
+ */
+function updatePrintAll(data) {
+  document.getElementById(
+    "btn-print-all"
+  ).innerText = `Imprimer ${data.nbPrint} étiquettes`;
+}
+/**
+ * Mets à jour le nombre d'étiquettes max à imprimer lors d'un changement de liste
+ * @param {*} data les données de l'application
+ */
+function updateNbPrint(data) {
+  let newValue = `${data.nbPrint}`;
+  let elt = document.getElementById("text-nb-impr");
+  if (elt.value !== newValue) {
+    elt.value = newValue;
+  }
+  elt.onchange = () => {
+    data.nbPrint = Number(elt.value);
+    updatePage(data);
+  };
+}
+
+/**
+ * Enregistre l'action permettant de stopper l'impression en cours
+ * @param {*} data données de l'application
+ */
+function registerStopPrint(data) {
+  document.getElementById("btn-print-stop").onclick = () => {
+    data.stopPrint = true;
+  };
+}
+
+/**
+ * Enregistre l'action liée au changement de statut de la checkbox pour simuler
+ * ou non l'impression
+ * @param {*} data les données de l'application
+ */
+function registerPrintSimulation(data) {
+  let elt = document.getElementById("chck-simulation");
+  elt.onchange = () => {
+    data.onlyPreview = elt.checked;
   };
 }
 
@@ -573,7 +643,11 @@ function updatePage(data) {
   updateCategorieSelect(data);
   updateTableMembres(data);
   updatePreview(data);
+  updateNbPrint(data);
+  updatePrintAll(data);
   registerPrintAll(data);
+  registerStopPrint(data);
+  registerPrintSimulation(data);
 }
 
 /**
@@ -651,6 +725,7 @@ document.addEventListener("DOMContentLoaded", function () {
       "Dauphin Or - DO1": "DO1 - Me 15h - Boulloche",
       "Dauphin Or - DO2": "DO2 - Sa 11h - Boulloche",
       Elite: "Elite",
+      ENTRAÎNEUR: "ENTRAÎNEUR",
       "Espoir 1": "Espoir 1",
       "Espoir 2": "Espoir 2",
       "Espoir 3": "Espoir 3",
@@ -699,8 +774,11 @@ document.addEventListener("DOMContentLoaded", function () {
       "Membre CA",
       "Officiel",
     ],
+    updatedList: false,
+    stopPrint: false,
     membreAffiche: undefined,
     printers: loadPrinters(),
+    onlyPreview: document.getElementById("chck-simulation").checked,
   };
   setupDatePickers(data);
   console.log(data);

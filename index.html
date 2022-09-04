@@ -42,9 +42,21 @@
         </button>
       </div>
       <div>
-        <button id="btn-print-all" value="print-all">
-          Imprimer toutes les inscriptions visibles
-        </button>
+        <p>
+          <label for="text-nb-impr">Nombre d'étiquettes à imprimer</label>
+          <input type="text" id="text-nb-impr" name="text-nb-impr" />
+        </p>
+        <button id="btn-print-all" value="print-all">Imprimer</button>
+        <button id="btn-print-stop" value="print-stop">Stop</button>
+        <p>
+          <input
+            type="checkbox"
+            id="chck-simulation"
+            name="chck-simulation"
+            checked="checked"
+          />
+          <label for="chck-simulation">simuler l'impression</label>
+        </p>
       </div>
     </div>
     <div>
