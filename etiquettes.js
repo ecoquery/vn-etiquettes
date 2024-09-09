@@ -174,23 +174,34 @@ function loadPrinters() {
  * @param {*} membres liste des membres à imprimer
  * @param {bool} onlyPreview ne pas imprimer, simplement changer l'affichage
  * @param {number} tempo attente entre deux impressions
+ * @param {number} remain nombre d'étiquettes à imprimer
  * @param {*} idx indice à partir duquel imprimer les membres
  */
-function printAll(data, membres, onlyPreview, tempo, idx) {
+function printAll(data, membres, onlyPreview, tempo, remain, idx) {
   console.log("Printing", membres, idx);
   if (idx === undefined) {
     idx = 0;
   }
-  if (idx >= membres.length) {
+  if (idx >= membres.length || remain <= 0) {
+    return;
+  }
+  if (data.stopPrint) {
+    data.stopPrint = false;
+    updatePage(data);
     return;
   }
   data.membreAffiche = membres[idx];
   updatePage(data);
-  if (!onlyPreview) {
+  console.log("Only preview: ", data.onlyPreview);
+  if (!data.onlyPreview) {
     let label = dymo.label.framework.openLabelXml(labelData);
+    console.log(label, data.printers);
     label.print(data.printers[0]);
   }
-  setTimeout(() => printAll(data, membres, onlyPreview, tempo, idx + 1), tempo);
+  setTimeout(
+    () => printAll(data, membres, onlyPreview, tempo, remain - 1, idx + 1),
+    tempo
+  );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,7 +248,7 @@ function makeDonneesMembres(data, comitiData) {
         .map((r) => r["Catégorie"])
         .filter((c) => data.sansEtiquette.indexOf(c) < 0),
       dateInscr: Math.min(
-        ...rows.map((r) => r["Date de inscription"]).map(litDate)
+        ...rows.map((r) => r["Date d'inscription"]).map(litDate)
       ),
     };
     result[id] = m;
@@ -353,6 +364,7 @@ function updateComitiData(data, comitiData) {
   addCategorieActiviteMapping(data);
   data.activites = getActivites(comitiData);
   data.categories = getCategories(comitiData);
+  data.updatedList = true;
   logCategorieManquantesDansAfficheCreneaux(data);
   updatePage(data);
 }
@@ -362,10 +374,6 @@ function updateComitiData(data, comitiData) {
  * @param {*} data les données de l'application
  */
 function updateApplicationData(data) {
-  // selectedActivity = document.getElementById("select-activite").value;
-  // data.activite = selectedActivity ? selectedActivity : "Aucune";
-  // selectedCategorie = document.getElementById("select-categorie").value;
-  // data.categorie = selectedCategorie ? selectedCategorie : "tout";
   membres = membresPourCategorieActivite(data, data.categorie, data.activite);
   membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
   data.membres = membres.map((m) => ({
@@ -383,6 +391,16 @@ function updateApplicationData(data) {
   ) {
     console.log(`activite dans update: ${data.activite}`);
     data.membreAffiche = data.membres[0];
+  }
+  if (data.updatedList) {
+    data.updatedList = false;
+    let idx =
+      data.membreAffiche === undefined
+        ? -1
+        : data.membres.map((m) => m.id).indexOf(data.membreAffiche.id);
+    idx = Math.max(idx, 0);
+    data.nbPrint = data.membres.length - idx;
+    data.printFrom = idx;
   }
 }
 
@@ -463,6 +481,7 @@ function updateCategorieSelect(data) {
   catagoriesSelect.onchange = () => {
     data.categorie = catagoriesSelect.value;
     data.membreAffiche = undefined;
+    data.updatedList = true;
     updatePage(data);
   };
 }
@@ -496,6 +515,7 @@ function updateActiviteSelect(data) {
   activiteSelect.onchange = () => {
     data.activite = activiteSelect.value;
     data.categorie = "tout";
+    data.updatedList = true;
     updatePage(data);
   };
 }
@@ -518,12 +538,13 @@ function updateTableMembres(data) {
               : ""
           }"><td>${m.id}</td><td>${m.nom}</td><td>${m.creneaux.join(
             ", "
-          )}</td></tr>`
+          )}</td><td>${new Date(m.dateInscr).toLocaleDateString()}</td></tr>`
       )
       .join("");
     membres.forEach((m) => {
       document.getElementById(`ligne-membre-${m.id}`).onclick = () => {
         data.membreAffiche = membres.filter((m2) => m2.id === m.id)[0];
+        data.updatedList = true;
         updatePage(data);
       };
     });
@@ -537,14 +558,20 @@ function updateTableMembres(data) {
 function updatePreview(data) {
   if (data.membreAffiche !== undefined) {
     m = data.membreAffiche;
-    labelData = genereLabelContent(m.nom, m.creneaux.join("\n"), "2022 / 2023");
+    labelData = genereLabelContent(
+      m.nom,
+      m.creneaux.join("\n"),
+      etiquettesConfig.saison
+    );
     let label = dymo.label.framework.openLabelXml(labelData);
     let pngData = label.render();
     document.getElementById("preview").innerHTML = `<img id="previewImage">`;
     let labelImage = document.getElementById("previewImage");
     labelImage.src = "data:image/png;base64," + pngData;
     document.getElementById("btn-print").onclick = () => {
-      label.print(data.printers[0]);
+      if (!data.onlyPreview) {
+        label.print(data.printers[0]);
+      }
     };
   } else {
     document.getElementById("preview").innerHTML = "";
@@ -557,7 +584,54 @@ function updatePreview(data) {
  */
 function registerPrintAll(data) {
   document.getElementById("btn-print-all").onclick = () => {
-    printAll(data, data.membres, true, 2000);
+    printAll(data, data.membres, true, 2000, data.nbPrint, data.printFrom);
+  };
+}
+
+/**
+ * Mets à jour l'affichage du bouton d'impression.
+ * @param {*} data les données de l'application
+ */
+function updatePrintAll(data) {
+  document.getElementById(
+    "btn-print-all"
+  ).innerText = `Imprimer ${data.nbPrint} étiquettes`;
+}
+/**
+ * Mets à jour le nombre d'étiquettes max à imprimer lors d'un changement de liste
+ * @param {*} data les données de l'application
+ */
+function updateNbPrint(data) {
+  let newValue = `${data.nbPrint}`;
+  let elt = document.getElementById("text-nb-impr");
+  if (elt.value !== newValue) {
+    elt.value = newValue;
+  }
+  elt.onchange = () => {
+    data.nbPrint = Number(elt.value);
+    updatePage(data);
+  };
+}
+
+/**
+ * Enregistre l'action permettant de stopper l'impression en cours
+ * @param {*} data données de l'application
+ */
+function registerStopPrint(data) {
+  document.getElementById("btn-print-stop").onclick = () => {
+    data.stopPrint = true;
+  };
+}
+
+/**
+ * Enregistre l'action liée au changement de statut de la checkbox pour simuler
+ * ou non l'impression
+ * @param {*} data les données de l'application
+ */
+function registerPrintSimulation(data) {
+  let elt = document.getElementById("chck-simulation");
+  elt.onchange = () => {
+    data.onlyPreview = elt.checked;
   };
 }
 
@@ -573,7 +647,11 @@ function updatePage(data) {
   updateCategorieSelect(data);
   updateTableMembres(data);
   updatePreview(data);
+  updateNbPrint(data);
+  updatePrintAll(data);
   registerPrintAll(data);
+  registerStopPrint(data);
+  registerPrintSimulation(data);
 }
 
 /**
@@ -608,99 +686,13 @@ function setupDatePickers(data) {
 // Actions à effectuer au démarrage de l'application
 document.addEventListener("DOMContentLoaded", function () {
   let data = {
-    afficheCreneaux: {
-      "ADO - A1-1 - 14-17 ans - Maitrise 1-2 nages":
-        "A1-1 - Me 20h - Boulloche",
-      "ADO - A1-2 - 14-17 ans - Maitrise 1-2 nages":
-        "A1-2 - Ve 20h - Boulloche",
-      "ADO - A2-1 - 14-17 ans - Maitrise 3-4 nages":
-        "A2-1 - Me 20h - Boulloche",
-      "ADO - A2-2 - 14-17 ans - Maitrise 3-4 nages": "A2-2 - Me 16h - CNEG",
-      "ADO - A2-3 - 14-17 ans - Maitrise 3-4 nages": "A2-3 - Me 17h - CNEG",
-      "ADO - A2-4 - 14-17 ans - Maitrise 3-4 nages": "A2-4 - Ve 20h - CNEG",
-      "ADU1 - 3/4 nages": "ADU1 - Lu 07h - CNEG",
-      "ADU2 - 1/2 nages": "ADU2 - Lu 12h30 - Boulloche",
-      "ADU3 - 3-4 nages": "ADU3 - Lu 12h30 - Boulloche",
-      "ADU4 - 1/2 nages": "ADU4 - Lu 21h - CNEG",
-      "ADU5 -3-4 nages": "ADU5 - Lu 21h - CNEG",
-      "ADU6 - 3-4 nages": "AD6 - Ma 12h - CNEG",
-      "ADU7 - 3-4 nages": "ADU7 - Ma 20h - CNEG",
-      "ADU8 - 1-2 nages": "ADU8 - Ma 20h - CNEG",
-      "ADU9 - 1-2 nages": "ADU9 - Me 20h - CNEG",
-      "ADU10 -3-4 nages": "ADU10 - Me 20h - CNEG",
-      "ADU11 3-4 nages": "ADU11 - Me 21h - CNEG",
-      "ADU12 - 3/4 nages": "ADU12 - Me 21h - CNEG",
-      "ADU13 - 1-2 nages": "ADU13 - Je 20h - Boulloche",
-      "ADU14 - 3-4 nages": "ADU14 - Je 20h - Boulloche",
-      "ADU15 - 3/4 nages": "ADU15 - Ve 07h - CNEG",
-      "ADU16 -1-2 nages": "ADU16 - Ve 11h30 - Boulloche",
-      "ADU17 -3/4 nages": "ADU17 - Ve 11h30 - Boulloche",
-      "ADU18 - 1-2 nages": "ADU18 - Ve 12h30 - Boulloche",
-      "ADU19 - 3/4 nages": "ADU19 - Ve 12h30 - Boulloche",
-      "ADU20 - 1-2 nages": "ADU20 - Ve 20h - CNEG",
-      "ADU21 - 3/4 nages": "ADU21 - Ve 20h - CNEG",
-      "ADULTES DEBUTANTS -DEB1": "DEB1 - Je 20h - Boulloche",
-      "Dauphin Bronze - DB15 - 5-6 ans": "DB15 - Sa 11h - Boulloche",
-      "Dauphin Bronze - DB16 - 7-8 ans": "DB16 - Sa 12h - Boulloche",
-      "DAUPHIN BRONZE -DB17- 5-6 ANS": "DB17 - Sa 13h - Boulloche",
-      "DAUPHIN BRONZE -DB18- 7-8 ANS": "DB18 - Sa 13h - Boulloche",
-      "Dauphin Argent - DA9": "DA9 - Sa 11h - Boulloche",
-      "Dauphin Argent - DA10": "DA10 - Sa 12h - Boulloche",
-      "Dauphin Argent - DA11": "DA11 - Sa 13h - Boulloche",
-      "Dauphin Argent - DA12": "DA12 - Sa 13h45 - Boulloche",
-      "Dauphin Or - DO1": "DO1 - Me 15h - Boulloche",
-      "Dauphin Or - DO2": "DO2 - Sa 11h - Boulloche",
-      Elite: "Elite",
-      "Espoir 1": "Espoir 1",
-      "Espoir 2": "Espoir 2",
-      "Espoir 3": "Espoir 3",
-      "Groupe départemental": "Groupe départemental",
-      "Jeunes - J1-2 - 10-13 ans - Maitrise 1-2 nages":
-        "J1-2 - Me 20h - Boulloche",
-      "Jeunes - J1-4 - 10-13 ans - Maitrise 1-2 nages":
-        "J1-4 - Ve 20h - Boulloche",
-      "Jeunes - J1-5 - 10-13 ans - Maitrise 1-2 nages":
-        "J1-5 - Sa 12h - Boulloche",
-      "Jeunes - J2-1 - 10-13 ans - Maitrise 3-4 nages":
-        "J2-1 - Me 20h - Boulloche",
-      "Jeunes - J2-2 - 10-13 ans - Maitrise 3-4 nages": "J2-2 - Me 15h - CNEG",
-      "Jeunes - J2-3 - 10-13 ans - Maitrise 3-4 nages": "J2-3 - Me 16h - CNEG",
-      "Jeunes - J2-4 - 10-13 ans - Maitrise 3-4 nages":
-        "J2-4 - Sa 12h - Boulloche",
-      MAÎTRES: "MAÎTRES",
-      Relève: "Relève",
-    },
-    sansEtiquette: [
-      "ADULTES DEBUTANTS -DEB2",
-      "Dauphin Argent - DA1",
-      "Dauphin Argent - DA2",
-      "Dauphin Argent - DA3",
-      "Dauphin Argent - DA4",
-      "Dauphin Argent - DA5",
-      "Dauphin Argent - DA6",
-      "Dauphin Argent - DA7",
-      "Dauphin Argent - DA8",
-      "Dauphin Bronze - DB10 - 5-6 ans",
-      "Dauphin Bronze - DB11 - 7-8 ans",
-      "Dauphin Bronze - DB12 - 5-6 ans",
-      "Dauphin Bronze - DB13 - 7-8 ans",
-      "Dauphin Bronze - DB14 - 5-6 ans",
-      "Dauphin Bronze - DB1 - 5-6 ans",
-      "Dauphin Bronze - DB2 - 5-6 ans",
-      "Dauphin Bronze - DB3 - 5-6 ans",
-      "Dauphin Bronze - DB4 - 7-8 ans",
-      "Dauphin Bronze - DB5 - 7-8 ans",
-      "Dauphin Bronze - DB6 - 5-6 ans",
-      "Dauphin Bronze - DB7 - 7-8 ans",
-      "Dauphin Bronze - DB8 - 7-8 ans",
-      "Dauphin Bronze - DB9 - 5-6 ans",
-      "Jeunes - J1-1 - 10-13 ans - Maitrise 1-2 nages",
-      "Jeunes - J1-3 - 10-13 ans - Maitrise 1-2 nages",
-      "Membre CA",
-      "Officiel",
-    ],
+    afficheCreneaux: etiquettesConfig.afficheCreneaux,
+    sansEtiquette: etiquettesConfig.sansEtiquette,
+    updatedList: false,
+    stopPrint: false,
     membreAffiche: undefined,
     printers: loadPrinters(),
+    onlyPreview: document.getElementById("chck-simulation").checked,
   };
   setupDatePickers(data);
   console.log(data);
