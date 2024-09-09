@@ -3,7 +3,8 @@ import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
+  // const d = dymo.label.framework
+  console.log(dymo)
   return (
     <>
       <img alt="logo" className="logo" src={electronLogo} />
