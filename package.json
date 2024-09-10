@@ -24,7 +24,9 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@types/dymo-label-framework": "^1.2.37",
-    "electron-updater": "^6.1.7"
+    "@types/papaparse": "^5.3.14",
+    "electron-updater": "^6.1.7",
+    "papaparse": "^5.4.1"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",
