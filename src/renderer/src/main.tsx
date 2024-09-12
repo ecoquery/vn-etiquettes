@@ -10,8 +10,9 @@ import Papa from 'papaparse'
 fetch(dymoURL)
   .then((r) => r.text())
   .then((script) => {
-    console.log(`got script, length: ${script.length}`)
-    eval(script)
+    console.log(`got dymo script, length: ${script.length}`)
+    const updatedScript = script.substring(0, script.length - 4) + '.call(globalThis);'
+    eval(updatedScript)
 
     const printers = dymo.label.framework.getPrinters()
     const printerInfo = printers.length > 0 ? printers[0].name : "Pas d'imprimante"
