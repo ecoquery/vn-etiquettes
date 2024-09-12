@@ -1,10 +1,12 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 
-function App(): JSX.Element {
+function App({ dymo: dymo }): JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   // const d = dymo.label.framework
-  console.log(dymo)
+  if (dymo !== undefined) {
+    console.log(dymo)
+  }
   return (
     <>
       <img alt="logo" className="logo" src={electronLogo} />
