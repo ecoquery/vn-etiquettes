@@ -195,6 +195,12 @@ function printAll(data, membres, onlyPreview, tempo, remain, idx) {
   updatePage(data);
   console.log("Only preview: ", data.onlyPreview);
   if (!data.onlyPreview) {
+    const m = data.membreAffiche;
+    const labelData = genereLabelContent(
+      m.nom,
+      m.offres.map((o) => data.offres[o].etiquette).join("\n"),
+      etiquettesConfig.saison
+    );
     let label = dymo.label.framework.openLabelXml(labelData);
     console.log(label, data.printers);
     label.print(data.printers[0]);
