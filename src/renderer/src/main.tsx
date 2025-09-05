@@ -3,26 +3,25 @@ import './assets/main.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import dymoURL from './assets/DYMO.Label.Framework.3.0.txt'
+import { getDymo } from './app/Dymo'
+// import dymoURL from './assets/DYMO.Label.Framework.3.0.txt'
 import Papa from 'papaparse'
 
 // Load DYMO js lib before building react app
-fetch(dymoURL)
-  .then((r) => r.text())
-  .then((script) => {
-    console.log(`got dymo script, length: ${script.length}`)
-    const updatedScript = script.substring(0, script.length - 4) + '.call(globalThis);'
-    eval(updatedScript)
+async function run() {
+  const dymo = await getDymo()
 
-    const printers = dymo.label.framework.getPrinters()
-    const printerInfo = printers.length > 0 ? printers[0].name : "Pas d'imprimante"
+  const printers = dymo.getPrinters()
+  const printerInfo = printers.length > 0 ? printers[0].name : "Pas d'imprimante"
 
-    ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-      <React.StrictMode>
-        <p>Salut</p>
-        <p>Imprimante: {printerInfo}</p>
-        <p>Papaparse works: {Papa + ''}</p>
-        <App dymo={dymo.label.framework} />
-      </React.StrictMode>
-    )
-  })
+  ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+    <React.StrictMode>
+      <p>Salut</p>
+      <p>Imprimante: {printerInfo}</p>
+      <p>Papaparse works: {Papa + ''}</p>
+      <App dymo={dymo} />
+    </React.StrictMode>
+  )
+}
+
+run()

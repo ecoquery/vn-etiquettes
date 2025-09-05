@@ -1,7 +1,9 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
+import { JSX } from 'react'
+import Etiquette from './components/Etiquette'
 
-const debugDymo = true
+const debugDymo = false
 
 function App({ dymo }): JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
@@ -15,7 +17,11 @@ function App({ dymo }): JSX.Element {
   }
   return (
     <>
-      <img alt="logo" className="logo" src={electronLogo} />
+      {/* <img alt="logo" className="logo" src={electronLogo} /> */}
+      <Etiquette
+        etiquetteData={{ nom: 'un nom', creneaux: 'des créneaux', saison: 'une saison' }}
+        dymo={dymo}
+      />
       <div className="creator">Powered by electron-vite</div>
       <div className="text">
         Build an Electron app with <span className="react">React</span>
