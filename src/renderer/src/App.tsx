@@ -19,7 +19,7 @@ function App({ dymo }): JSX.Element {
     <>
       {/* <img alt="logo" className="logo" src={electronLogo} /> */}
       <Etiquette
-        etiquetteData={{ nom: 'un nom', creneaux: 'des créneaux', saison: 'une saison' }}
+        etiquetteData={{ nom: 'un nom', creneaux: 'des\ncréneaux', saison: 'une saison' }}
         dymo={dymo}
       />
       <div className="creator">Powered by electron-vite</div>
