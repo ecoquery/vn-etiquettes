@@ -22,7 +22,7 @@ fetch(dymoURL)
         <p>Salut</p>
         <p>Imprimante: {printerInfo}</p>
         <p>Papaparse works: {Papa + ''}</p>
-        <App />
+        <App dymo={dymo.label.framework} />
       </React.StrictMode>
     )
   })

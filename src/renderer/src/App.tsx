@@ -1,11 +1,17 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 
-function App({ dymo: dymo }): JSX.Element {
+const debugDymo = true
+
+function App({ dymo }): JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   // const d = dymo.label.framework
-  if (dymo !== undefined) {
-    console.log(dymo)
+  if (debugDymo) {
+    if (dymo !== undefined) {
+      console.log(dymo)
+    } else {
+      console.error('dymo is undefined')
+    }
   }
   return (
     <>
