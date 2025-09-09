@@ -160,8 +160,7 @@ export function parseDateInscription(row): Date {
  * @param rows les lignes du fichier comiti
  * @returns la liste des inscrits
  */
-// TODO: refactor with state managment in mind
-export function loadComitiData(rows): Array<Inscrit> {
+export function updateStateWithComitiData(state: InscritsState, rows): InscritsState {
   const inscrits: Record<number, Inscrit> = {}
   const offres: Record<number, Offre> = {}
   for (const row of rows) {
@@ -180,7 +179,7 @@ export function loadComitiData(rows): Array<Inscrit> {
       inscrit.inscription = insDate
     }
   }
-  return Object.values(inscrits)
+  return { ...state, inscrits: Object.values(inscrits), selected: undefined }
 }
 
 const initialState: InscritsState = {
