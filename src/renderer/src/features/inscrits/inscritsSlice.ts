@@ -5,6 +5,9 @@ const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
 const cLieuxHoraires = 'Lieux et horaires'
 const cActivite = 'Nom spécifique activité'
+const cNumeroComiti = 'Numéro Comiti'
+const cNom = 'Nom'
+const cPrenom = 'Prénom'
 
 /**
  * Noms alternatifs pour les piscines à placer sur les étiquettes
@@ -39,6 +42,7 @@ export interface Inscrit {
   nComiti: number
   nom: string
   offres: Array<Offre>
+  // TODO: gérer les dates de dernière inscription
 }
 
 /**
@@ -130,7 +134,44 @@ export function offreOfRow(row): Offre {
   }
 }
 
-const initialState: InscritsState = { inscrits: [], selected: undefined, status: 'idle' }
+/**
+ * Extrait les information d'un inscrit à partir d'une ligne du fichier comiti
+ * @param row la ligne issue du fichier csv comiti
+ * @returns un inscrit, sans l'offre associée
+ */
+export function inscritOfRow(row): Inscrit {
+  return { nComiti: Number(cNumeroComiti), nom: `${row[cNom]} ${row[cPrenom]}`, offres: [] }
+}
+
+/**
+ * Extrait les informations des inscrits des données du fichier comiti
+ * @param rows les lignes du fichier comiti
+ * @returns la liste des inscrits
+ */
+// TODO: refactor with state managment in mind
+export function loadComitiData(rows): Array<Inscrit> {
+  const inscrits: Record<number, Inscrit> = {}
+  const offres: Record<number, Offre> = {}
+  for (const row of rows) {
+    const numInscrit = Number(row[cNumeroComiti])
+    if (!(numInscrit in inscrits)) {
+      inscrits[numInscrit] = inscritOfRow(row)
+    }
+    const numOffre = Number(row[cNumeroOffre])
+    if (!(numOffre in offres)) {
+      offres[numOffre] = offreOfRow(row)
+    }
+    inscrits[numInscrit].offres.push(offres[numOffre])
+    // TODO: gérer les dates d'inscription
+  }
+  return Object.values(inscrits)
+}
+
+const initialState: InscritsState = {
+  inscrits: [],
+  selected: undefined,
+  status: 'idle'
+}
 
 export const inscritsSlice = createSlice({ name: 'inscrits', initialState, reducers: {} })
 
