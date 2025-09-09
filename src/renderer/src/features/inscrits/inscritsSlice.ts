@@ -8,6 +8,7 @@ const cActivite = 'Nom spécifique activité'
 const cNumeroComiti = 'Numéro Comiti'
 const cNom = 'Nom'
 const cPrenom = 'Prénom'
+const cDateInscription = "Date d'inscription"
 
 /**
  * Noms alternatifs pour les piscines à placer sur les étiquettes
@@ -42,7 +43,7 @@ export interface Inscrit {
   nComiti: number
   nom: string
   offres: Array<Offre>
-  // TODO: gérer les dates de dernière inscription
+  inscription?: Date
 }
 
 /**
@@ -144,6 +145,17 @@ export function inscritOfRow(row): Inscrit {
 }
 
 /**
+ * Extrait la date d'inscription de la ligne comiti
+ * @param row la ligne comiti
+ * @returns la date d'inscription de la ligne comiti
+ */
+export function parseDateInscription(row): Date {
+  const sValue: string = row[cDateInscription]
+  const [jour, mois, annee] = sValue.split('-')
+  return new Date(`${annee}-${mois}-${jour}`)
+}
+
+/**
  * Extrait les informations des inscrits des données du fichier comiti
  * @param rows les lignes du fichier comiti
  * @returns la liste des inscrits
@@ -157,12 +169,16 @@ export function loadComitiData(rows): Array<Inscrit> {
     if (!(numInscrit in inscrits)) {
       inscrits[numInscrit] = inscritOfRow(row)
     }
+    const inscrit = inscrits[numInscrit]
     const numOffre = Number(row[cNumeroOffre])
     if (!(numOffre in offres)) {
       offres[numOffre] = offreOfRow(row)
     }
-    inscrits[numInscrit].offres.push(offres[numOffre])
-    // TODO: gérer les dates d'inscription
+    inscrit.offres.push(offres[numOffre])
+    const insDate = parseDateInscription(row)
+    if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
+      inscrit.inscription = insDate
+    }
   }
   return Object.values(inscrits)
 }
