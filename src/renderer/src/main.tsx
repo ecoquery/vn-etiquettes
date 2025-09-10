@@ -6,6 +6,8 @@ import App from './App'
 import { getDymo } from './app/Dymo'
 // import dymoURL from './assets/DYMO.Label.Framework.3.0.txt'
 import Papa from 'papaparse'
+import { Provider } from 'react-redux'
+import { store } from './app/store'
 
 // Load DYMO js lib before building react app
 async function run() {
@@ -16,10 +18,11 @@ async function run() {
 
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
-      <p>Salut</p>
-      <p>Imprimante: {printerInfo}</p>
-      <p>Papaparse works: {Papa + ''}</p>
-      <App dymo={dymo} />
+      <Provider store={store}>
+        <p>Salut</p>
+        <p>Imprimante: {printerInfo}</p>
+        <App dymo={dymo} />
+      </Provider>
     </React.StrictMode>
   )
 }

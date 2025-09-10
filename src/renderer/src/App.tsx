@@ -2,6 +2,7 @@ import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 import { JSX } from 'react'
 import Etiquette from './components/Etiquette'
+import { ComitiFileHandler } from './components/ComitiFileHandler'
 
 const debugDymo = false
 
@@ -22,10 +23,11 @@ function App({ dymo }): JSX.Element {
         etiquetteData={{ nom: 'un nom', creneaux: 'des\ncréneaux', saison: 'une saison' }}
         dymo={dymo}
       />
+      <ComitiFileHandler />
       <div className="creator">Powered by electron-vite</div>
       <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
+        Build an Electron app with <span className="react">React</span>&nbsp;and{' '}
+        <span className="ts">TypeScript</span>
       </div>
       <p className="tip">
         Please try pressing <code>F12</code> to open the devTool

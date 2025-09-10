@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { RootState } from '../../app/store'
+import type { PayloadAction } from '@reduxjs/toolkit'
 
 const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
@@ -43,7 +44,7 @@ export interface Inscrit {
   nComiti: number
   nom: string
   offres: Array<Offre>
-  inscription?: Date
+  inscription?: string
 }
 
 /**
@@ -149,21 +150,26 @@ export function inscritOfRow(row): Inscrit {
  * @param row la ligne comiti
  * @returns la date d'inscription de la ligne comiti
  */
-export function parseDateInscription(row): Date {
+export function parseDateInscription(row: Record<string, string>): string {
   const sValue: string = row[cDateInscription]
   const [jour, mois, annee] = sValue.split('-')
-  return new Date(`${annee}-${mois}-${jour}`)
+  return new Date(`${annee}-${mois}-${jour}`).toISOString()
 }
 
 /**
- * Extrait les informations des inscrits des données du fichier comiti
+ * Mets à jour les informations des inscrits des données du fichier comiti
  * @param rows les lignes du fichier comiti
- * @returns la liste des inscrits
  */
-export function updateStateWithComitiData(state: InscritsState, rows): InscritsState {
+export function updateStateWithComitiData(
+  state: InscritsState,
+  rows: Array<Record<string, string>>
+) {
   const inscrits: Record<number, Inscrit> = {}
   const offres: Record<number, Offre> = {}
   for (const row of rows) {
+    if (row[cNumeroComiti] === '') {
+      continue
+    }
     const numInscrit = Number(row[cNumeroComiti])
     if (!(numInscrit in inscrits)) {
       inscrits[numInscrit] = inscritOfRow(row)
@@ -179,7 +185,8 @@ export function updateStateWithComitiData(state: InscritsState, rows): InscritsS
       inscrit.inscription = insDate
     }
   }
-  return { ...state, inscrits: Object.values(inscrits), selected: undefined }
+  state.inscrits = Object.values(inscrits)
+  state.selected = undefined
 }
 
 const initialState: InscritsState = {
@@ -188,10 +195,18 @@ const initialState: InscritsState = {
   status: 'idle'
 }
 
-export const inscritsSlice = createSlice({ name: 'inscrits', initialState, reducers: {} })
+export const inscritsSlice = createSlice({
+  name: 'inscrits',
+  initialState,
+  reducers: {
+    updateWithComitiData: (state, action: PayloadAction<Array<Record<string, string>>>) => {
+      updateStateWithComitiData(state, action.payload)
+    }
+  }
+})
 
 // Export the generated action creators for use in components
-// export const { increment, decrement, incrementByAmount } = counterSlice.actions
+export const { updateWithComitiData } = inscritsSlice.actions
 
 // Export the slice reducer for use in the store configuration
 export default inscritsSlice.reducer
