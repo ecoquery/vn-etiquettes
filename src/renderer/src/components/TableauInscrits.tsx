@@ -31,8 +31,9 @@ export const TableauInscrits = () => {
       columns={columns}
       options={{ maxHeight: 300, layout: 'fitData', selectableRows: 1, index: 'nComiti' }}
       events={{
-        rowSelected: (row) => {
-          dispatch(inscritSelected(inscrits[row._row.data.nComiti]))
+        rowSelectionChanged: (data, _rows, _selected, _deselect) => {
+          const nComiti = data[0]?.nComiti
+          dispatch(inscritSelected(inscrits[nComiti]))
         }
       }}
     />

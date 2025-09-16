@@ -254,7 +254,7 @@ export const inscritsSlice = createSlice({
     updateWithComitiData: (state, action: PayloadAction<Array<Record<string, string>>>) => {
       updateStateWithComitiData(state, action.payload)
     },
-    inscritSelected: (state, action: PayloadAction<Inscrit>) => {
+    inscritSelected: (state, action: PayloadAction<Inscrit | undefined>) => {
       state.selected = action.payload
     }
   }
