@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { extractCreneau, extractPiscine, extractTitreCourt } from './inscritsSlice'
+import { extractCreneaux, extractPiscine, extractTitreCourt } from './inscritsSlice'
 
 const sampleCreneaux = [
   'Centre Nautique Etienne Gagnaire Mercredi : 20h00 - 20h55',
   'Piscine André Boulloche Lundi : 12h30 - 13h25',
-  'Piscine André Boulloche Vendredi : 20h00 - 20h55',
+  ' Piscine André Boulloche Vendredi : 20h00 - 20h55',
   'Piscine des Gratte Ciel Mardi : 19h15 - 20h00'
 ]
 const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -29,24 +29,28 @@ describe('extractCreneau', () => {
   it('should start with a day', () => {
     const shortDays = days.map((s) => s.substring(0, 3))
     for (const cr of sampleCreneaux) {
-      const creneau = extractCreneau(cr)
-      expect(shortDays.some((day) => creneau.startsWith(day))).toBeTruthy()
+      const creneau = extractCreneaux(cr)[0]
+      if (creneau !== undefined) {
+        expect(shortDays.some((day) => creneau.heure.startsWith(day))).toBeTruthy()
+      }
     }
   })
   it('should contain a time', () => {
     for (const cr of sampleCreneaux) {
-      const creneau = extractCreneau(cr)
-      expect(creneau).toSatisfy((c) => Boolean(/.*\d+h\d\d.*/.exec(c)))
+      const creneau = extractCreneaux(cr)[0]
+      if (creneau !== undefined) {
+        expect(creneau.heure).toSatisfy((c) => Boolean(/.*\d+h\d\d.*/.exec(c)))
+      }
     }
   })
 })
 
 describe('extractPiscine', () => {
   it('should give a piscine name', () => {
-    const piscineOk = ['CNEG', 'Boulloche', 'Piscine des Gratte Ciel']
+    const piscineOk = ['CNEG', 'Boulloche']
     for (const cr of sampleCreneaux) {
       const piscine = extractPiscine(cr)
-      expect(piscineOk).toContain(piscine)
+      expect(piscine).toSatisfy((p) => piscineOk.indexOf(p) >= 0 || p === undefined)
     }
   })
 })

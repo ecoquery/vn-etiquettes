@@ -20,9 +20,28 @@ const piscineAliases = {
 }
 
 /**
+ * Piscines sans carte
+ */
+const sansCarte = ['Piscine des Gratte Ciel']
+
+/**
  * Noms de groupes qui ne sont pas gérés programmatiquement
  */
-const groupeAliases = { MAÎTRES: 'MAÎTRES' }
+const groupeSpecifiques = ['MAÎTRES', 'Seniors', 'Avenirs', 'Juniors', 'Benjamins']
+
+/**
+ * Gestion des groupes non gérés programmatiquement, à renommer
+ */
+const groupeAliases = {
+  'ADU-CSE-BPCESI': 'BPCESI',
+  'Dauphin bronze - DB2': 'DB2',
+  'Dauphin bronze - DB6': 'DB6'
+}
+for (const gr of groupeSpecifiques) {
+  groupeAliases[gr] = gr
+}
+
+const groupesAIgnorer = ['Promotionnel', 'Officiel']
 
 /**
  * Représente une offre comiti, utilisé pour construire l'affichage d'un créneau
@@ -31,8 +50,7 @@ const groupeAliases = { MAÎTRES: 'MAÎTRES' }
 export interface Offre {
   nOffre: number
   titre: string
-  creneau: string
-  piscine: string
+  creneaux: Array<{ lieu: string; heure: string }>
   titreCourt: string
   activite: string
 }
@@ -51,19 +69,19 @@ export interface Inscrit {
  * Application internal state on comiti data
  */
 export interface InscritsState {
-  inscrits: Array<Inscrit>
+  inscrits: Record<number, Inscrit>
   selected: Inscrit | undefined
   status: 'idle' | 'loading' | 'failed'
 }
 
 /** regex used to parse lieux et horaires */
-const lieuHoraireParser = /(?<piscine>.+)\s(?<jour>\S+)\s:\s(?<heure>\S+)\s.*/
+const lieuHoraireParser = /\s*(?<piscine>\S.+)\s(?<jour>\S+)\s:\s(?<heure>\S+)\s.*/
 /**
  * Extrait le jour et l'heure du créneau dans comiti
  * @param data le lieu et l'horaire issu de comiti
  * @returns un jour et une heure à afficher sur l'étiquette
  */
-export function extractCreneau(data: string): string {
+export function extractHoraire(data: string): string {
   const matched = lieuHoraireParser.exec(data)
   if (matched) {
     return `${matched.groups?.jour?.substring(0, 3)} ${matched.groups?.heure}`
@@ -78,10 +96,17 @@ export function extractCreneau(data: string): string {
  * @param data le lieu et l'horaire issu de comiti
  * @returns la piscine dans laquelle l'activité a lieu
  */
-export function extractPiscine(data: string): string {
+export function extractPiscine(data: string): string | undefined {
   const matched = lieuHoraireParser.exec(data)
   if (matched) {
     const piscine = matched.groups?.piscine
+    if (!piscine) {
+      console.error('Piscine not found in ', matched)
+      return undefined
+    }
+    if (sansCarte.indexOf(piscine) >= 0) {
+      return undefined // pas de carte pour cette piscine
+    }
     return piscineAliases[piscine ?? 'erreur'] ?? piscine
   } else {
     console.error(`Could not parse lieu horaire '${data}'`)
@@ -90,10 +115,23 @@ export function extractPiscine(data: string): string {
 }
 
 /**
+ * Extrait un tableaux de lieux et horaires pour une offre
+ * @param data la cellule lieux et horaires du fichier comiti
+ */
+export function extractCreneaux(data: string): Array<{ lieu: string; heure: string }> {
+  return data
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((s) => ({ lieu: extractPiscine(s) ?? '', heure: extractHoraire(s) }))
+    .filter((c) => c.lieu !== '')
+}
+
+/**
  * Calcule le nom d'un groupe à afficher
  * @param {string} data le nom du groupe dans comiti
  */
-export function extractTitreCourt(data: string): string {
+export function extractTitreCourt(data: string): string | undefined {
   /** essaie d'extraire un groupe à partir d'une regex */
   function t(re, repl?) {
     const m = re.exec(data)
@@ -114,6 +152,8 @@ export function extractTitreCourt(data: string): string {
     groupeAliases[data]
   if (shortName) {
     return shortName
+  } else if (groupesAIgnorer.indexOf(data) >= 0) {
+    return undefined
   } else {
     console.error(`Failed to extract groupe from '${data}'`)
     return 'erreur'
@@ -125,13 +165,20 @@ export function extractTitreCourt(data: string): string {
  * @param row ligne comiti issue du fichier csv
  * @returns une offre
  */
-export function offreOfRow(row): Offre {
+export function offreOfRow(row): Offre | undefined {
+  const titreCourt = extractTitreCourt(row[cCategorie])
+  if (titreCourt === undefined) {
+    return undefined // Pas de titre -> l'offre ne correspond pas à une carte (e.g. Officiel)
+  }
+  const creneaux = extractCreneaux(row[cLieuxHoraires])
+  if (creneaux.length === 0) {
+    return undefined // Pas de créneau (i.e. que des créneaux sans besoin de carte)
+  }
   return {
     nOffre: Number(row[cNumeroOffre]),
     titre: row[cCategorie],
-    creneau: extractCreneau(row[cLieuxHoraires]),
-    piscine: extractPiscine(row[cLieuxHoraires]),
-    titreCourt: extractTitreCourt(row[cCategorie]),
+    creneaux: creneaux,
+    titreCourt: titreCourt,
     activite: row[cActivite]
   }
 }
@@ -142,7 +189,7 @@ export function offreOfRow(row): Offre {
  * @returns un inscrit, sans l'offre associée
  */
 export function inscritOfRow(row): Inscrit {
-  return { nComiti: Number(cNumeroComiti), nom: `${row[cNom]} ${row[cPrenom]}`, offres: [] }
+  return { nComiti: Number(row[cNumeroComiti]), nom: `${row[cNom]} ${row[cPrenom]}`, offres: [] }
 }
 
 /**
@@ -168,29 +215,34 @@ export function updateStateWithComitiData(
   const offres: Record<number, Offre> = {}
   for (const row of rows) {
     if (row[cNumeroComiti] === '') {
-      continue
+      continue // ligne vide
+    }
+    const numOffre = Number(row[cNumeroOffre])
+    if (!(numOffre in offres)) {
+      const offre = offreOfRow(row)
+      if (offre === undefined) {
+        continue // Cette offre ne donne pas lieu à être affichée sur une carte
+      } else {
+        offres[numOffre] = offre
+      }
     }
     const numInscrit = Number(row[cNumeroComiti])
     if (!(numInscrit in inscrits)) {
       inscrits[numInscrit] = inscritOfRow(row)
     }
     const inscrit = inscrits[numInscrit]
-    const numOffre = Number(row[cNumeroOffre])
-    if (!(numOffre in offres)) {
-      offres[numOffre] = offreOfRow(row)
-    }
     inscrit.offres.push(offres[numOffre])
     const insDate = parseDateInscription(row)
     if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
       inscrit.inscription = insDate
     }
   }
-  state.inscrits = Object.values(inscrits)
+  state.inscrits = inscrits
   state.selected = undefined
 }
 
 const initialState: InscritsState = {
-  inscrits: [],
+  inscrits: {},
   selected: undefined,
   status: 'idle'
 }

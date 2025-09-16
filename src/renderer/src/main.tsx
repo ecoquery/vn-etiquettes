@@ -8,6 +8,7 @@ import { getDymo } from './app/Dymo'
 import Papa from 'papaparse'
 import { Provider } from 'react-redux'
 import { store } from './app/store'
+import { TableauInscrits } from './components/TableauInscrits'
 
 // Load DYMO js lib before building react app
 async function run() {
@@ -21,6 +22,7 @@ async function run() {
       <Provider store={store}>
         <p>Salut</p>
         <p>Imprimante: {printerInfo}</p>
+        <TableauInscrits />
         <App dymo={dymo} />
       </Provider>
     </React.StrictMode>
