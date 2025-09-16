@@ -1,4 +1,3 @@
-// TODO: use tabulator via https://tabulator.info/docs/6.3/react#react
 // TODO: Setup filters: activities, offres, date d'inscription, see #5
 // TODO: option pour assurer qu'un inscrit n'est affiché que dans une activité, même s'il est inscrit à plusieurs activités, see #4
 
