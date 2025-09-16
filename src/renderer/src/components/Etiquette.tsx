@@ -1,9 +1,33 @@
 import { JSX } from 'react'
 import { genereLabelContent } from '../app/Dymo'
+import { Inscrit, Offre } from '@renderer/features/inscrits/inscritsSlice'
 
-function Etiquette({ etiquetteData, dymo }): JSX.Element {
-  const { nom, creneaux, saison } = etiquetteData
-  const labelData = genereLabelContent(nom, creneaux, saison)
+interface EtiquetteProps {
+  inscrit?: Inscrit
+  saison: string
+  dymo: any
+}
+
+function formatCreneaux(creneaux: Array<{ lieu: string; heure: string }>) {
+  return creneaux.map((cr) => `${cr.lieu} - ${cr.heure}`).join(', ')
+}
+
+function formatOffre(o: Offre) {
+  if (o.creneaux.length > 2) {
+    return o.titreCourt
+  } else {
+    return `${o.titreCourt} - ${formatCreneaux(o.creneaux)}`
+  }
+}
+
+function formatOffres(offres: Array<Offre>) {
+  return offres.map(formatOffre).join('\n')
+}
+
+function Etiquette({ inscrit, saison, dymo }: Readonly<EtiquetteProps>): JSX.Element {
+  const nom = inscrit?.nom ?? ''
+  const creneaux = inscrit
+  const labelData = genereLabelContent(nom, formatOffres(inscrit?.offres ?? []), saison)
   const label = dymo.openLabelXml(labelData)
   const pngData = label.render()
   return (

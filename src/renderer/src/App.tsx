@@ -3,6 +3,9 @@ import electronLogo from './assets/electron.svg'
 import { JSX } from 'react'
 import Etiquette from './components/Etiquette'
 import { ComitiFileHandler } from './components/ComitiFileHandler'
+import { TableauInscrits } from './components/TableauInscrits'
+import { useSelector } from 'react-redux'
+import { selectSelected } from './features/inscrits/inscritsSlice'
 
 const debugDymo = false
 
@@ -16,13 +19,13 @@ function App({ dymo }): JSX.Element {
       console.error('dymo is undefined')
     }
   }
+
+  const selectedInscrit = useSelector(selectSelected)
+
   return (
     <>
       {/* <img alt="logo" className="logo" src={electronLogo} /> */}
-      <Etiquette
-        etiquetteData={{ nom: 'un nom', creneaux: 'des\ncréneaux', saison: 'une saison' }}
-        dymo={dymo}
-      />
+      <Etiquette inscrit={selectedInscrit} saison={'2025-2026'} dymo={dymo} />
       <ComitiFileHandler />
       <div className="creator">Powered by electron-vite</div>
       <div className="text">

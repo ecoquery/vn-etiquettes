@@ -253,12 +253,15 @@ export const inscritsSlice = createSlice({
   reducers: {
     updateWithComitiData: (state, action: PayloadAction<Array<Record<string, string>>>) => {
       updateStateWithComitiData(state, action.payload)
+    },
+    inscritSelected: (state, action: PayloadAction<Inscrit>) => {
+      state.selected = action.payload
     }
   }
 })
 
 // Export the generated action creators for use in components
-export const { updateWithComitiData } = inscritsSlice.actions
+export const { updateWithComitiData, inscritSelected } = inscritsSlice.actions
 
 // Export the slice reducer for use in the store configuration
 export default inscritsSlice.reducer

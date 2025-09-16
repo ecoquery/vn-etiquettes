@@ -4,7 +4,7 @@
 
 import 'tabulator-tables/dist/css/tabulator.min.css' //import Tabulator stylesheet
 
-import { Offre, selectInscrits } from '../features/inscrits/inscritsSlice'
+import { inscritSelected, Offre, selectInscrits } from '../features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { ReactTabulator } from 'react-tabulator'
 
@@ -26,6 +26,15 @@ export const TableauInscrits = () => {
     offres: x.offres.map(stringOfOffre).join('; ')
   }))
   return (
-    <ReactTabulator data={data} columns={columns} options={{ maxHeight: 300, layout: 'fitData' }} />
+    <ReactTabulator
+      data={data}
+      columns={columns}
+      options={{ maxHeight: 300, layout: 'fitData', selectableRows: 1, index: 'nComiti' }}
+      events={{
+        rowSelected: (row) => {
+          dispatch(inscritSelected(inscrits[row._row.data.nComiti]))
+        }
+      }}
+    />
   )
 }
