@@ -24,16 +24,21 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.3",
+    "@mui/x-data-grid": "^8.13.1",
     "@reduxjs/toolkit": "^2.9.0",
     "@types/dymo-label-framework": "^1.2.37",
     "@types/papaparse": "^5.3.14",
     "@types/tabulator-tables": "^6.2.11",
     "electron-updater": "^6.6.2",
     "papaparse": "^5.4.1",
+    "react": "^19.1.1",
+    "react-bulma-components": "^4.1.0",
+    "react-dom": "^19.1.1",
     "react-papaparse": "^4.4.0",
-    "react-redux": "^9.2.0",
-    "react-tabulator": "^0.21.0",
-    "tabulator-tables": "^6.3.1"
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -52,8 +57,6 @@
     "eslint-plugin-react": "^7.37.5",
     "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.4",
     "vitest": "^3.2.4"

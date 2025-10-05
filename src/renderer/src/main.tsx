@@ -6,21 +6,14 @@ import App from './App'
 import { getDymo } from './app/Dymo'
 import { Provider } from 'react-redux'
 import { store } from './app/store'
-import { TableauInscrits } from './components/TableauInscrits'
 
 // Load DYMO js lib before building react app
 async function run() {
   const dymo = await getDymo()
 
-  const printers = dymo.getPrinters()
-  const printerInfo = printers.length > 0 ? printers[0].name : "Pas d'imprimante"
-
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
       <Provider store={store}>
-        <p>Salut</p>
-        <p>Imprimante: {printerInfo}</p>
-        <TableauInscrits />
         <App dymo={dymo} />
       </Provider>
     </React.StrictMode>

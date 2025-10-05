@@ -1,10 +1,11 @@
 import Versions from './components/Versions'
 import { JSX } from 'react'
-import Etiquette from './components/Etiquette'
-import { ComitiFileHandler } from './components/ComitiFileHandler'
 import { useSelector } from 'react-redux'
 import { selectSelected } from './features/inscrits/inscritsSlice'
-
+import { GestionInscrits } from './components/GestionInscrits'
+import { GestionImpression } from './components/GestionImpression'
+import { AppBar, Container, Grid, Toolbar, Typography } from '@mui/material'
+import { ComitiFileHandler } from './components/ComitiFileHandler'
 const debugDymo = false
 
 function App({ dymo }): JSX.Element {
@@ -16,27 +17,26 @@ function App({ dymo }): JSX.Element {
     }
   }
 
-  const selectedInscrit = useSelector(selectSelected)
-
   return (
     <>
-      <Etiquette inscrit={selectedInscrit} saison={'2025-2026'} dymo={dymo} />
-      <ComitiFileHandler />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>&nbsp;and{' '}
-        <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-      </div>
+      <AppBar position="static">
+        <Toolbar variant="dense">
+          <Typography variant="h6" color="inherit" component="div">
+            VN: Impression étiquettes
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container style={{ paddingTop: '40px' }}>
+        <Grid container spacing={2}>
+          <Grid size={8}>
+            <GestionInscrits />
+          </Grid>
+          <Grid size={4}>
+            <GestionImpression dymo={dymo} />
+          </Grid>
+        </Grid>
+        <ComitiFileHandler />
+      </Container>
       <Versions></Versions>
     </>
   )

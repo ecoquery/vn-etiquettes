@@ -1,5 +1,6 @@
 import { updateWithComitiData } from '../features/inscrits/inscritsSlice'
 import { CSSProperties } from 'react'
+import { Button } from 'react-bulma-components'
 import { useCSVReader } from 'react-papaparse'
 import { useDispatch } from 'react-redux'
 
@@ -44,9 +45,9 @@ export const ComitiFileHandler = () => {
       {({ getRootProps, acceptedFile, ProgressBar }: any) => (
         <>
           <div style={styles.csvReader}>
-            <button type="button" {...getRootProps()} style={styles.browseFile}>
+            <Button type="button" {...getRootProps()} style={styles.browseFile}>
               Fichier comiti
-            </button>
+            </Button>
             <div style={styles.acceptedFile}>{acceptedFile?.name}</div>
           </div>
           <ProgressBar style={styles.progressBarBackgroundColor} />
