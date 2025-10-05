@@ -1,5 +1,5 @@
 // import { electron } from 'process'
-import { useState } from 'react'
+import { JSX, useState } from 'react'
 
 function Versions(): JSX.Element {
   const pversions = window?.electron?.process?.versions

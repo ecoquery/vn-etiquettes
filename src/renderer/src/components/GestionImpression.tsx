@@ -12,7 +12,9 @@ export const GestionImpression = ({ dymo }) => {
       <Paper>
         <Etiquette inscrit={selectedInscrit} saison={'2025-2026'} dymo={dymo} />
       </Paper>
-      <Button variant="contained">Imprimer cette étiquette</Button>
+      <Button variant="contained" disabled>
+        Imprimer cette étiquette
+      </Button>
       <TextField
         type="number"
         label="Nombre d'étiquettes à imprimer"
@@ -23,11 +25,15 @@ export const GestionImpression = ({ dymo }) => {
           setNbPrint(nb < 0 ? 0 : nb)
         }}
       />
-      <Button variant="contained">
+      <Button variant="contained" disabled>
         Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}
       </Button>
       <Stack direction="row" alignContent="left" spacing={2} width={'100%'}>
-        <FormControlLabel control={<Checkbox defaultChecked />} label="Simuler l'impression" />
+        <FormControlLabel
+          control={<Checkbox defaultChecked />}
+          label="Simuler l'impression"
+          disabled
+        />
       </Stack>
     </Stack>
   )

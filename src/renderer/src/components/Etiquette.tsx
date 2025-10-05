@@ -28,11 +28,11 @@ function Etiquette({ inscrit, saison, dymo }: Readonly<EtiquetteProps>): JSX.Ele
   const nom = inscrit?.nom ?? ''
   const labelData = genereLabelContent(nom, formatOffres(inscrit?.offres ?? []), saison)
   const label = dymo.openLabelXml(labelData)
-  const pngData = label.render()
+  const pngData = 'data:image/png;base64,' + label.render()
   return (
     <img
       alt={`Étiquette ${saison} pour ${nom} avec les créneaux ${formatOffres(inscrit?.offres ?? [])}`}
-      src={'data:image/png;base64,' + pngData}
+      src={pngData}
     />
   )
 }
