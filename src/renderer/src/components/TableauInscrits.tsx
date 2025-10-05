@@ -2,18 +2,19 @@
 // TODO: option pour assurer qu'un inscrit n'est affiché que dans une activité, même s'il est inscrit à plusieurs activités, see #4
 
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
-import { inscritSelected, Offre, selectInscrits } from '../features/inscrits/inscritsSlice'
+import {
+  inscritSelected,
+  Offre,
+  selectInscrits,
+  selectSelected
+} from '../features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
 export const TableauInscrits = () => {
   const dispatch = useDispatch()
   const inscrits = useSelector(selectInscrits)
+  const selectedInscrit = useSelector(selectSelected)
 
-  // const columns = [
-  //   { title: 'Numero Comiti', field: 'nComiti', width: 100 },
-  //   { title: 'Nom', field: 'nom', width: 300 },
-  //   { title: 'Créneaux', field: 'offres', width: 400, resizable: true }
-  // ]
   const stringOfOffre = (o: Offre) => {
     const sCr = o.creneaux.map((cr) => `${cr.lieu} - ${cr.heure}`).join(', ')
     return `${o.titreCourt} - ${sCr}`
@@ -33,11 +34,17 @@ export const TableauInscrits = () => {
     { headerName: 'Nom', field: 'nom', flex: 2 },
     { headerName: 'Créneaux', field: 'offres', flex: 3 }
   ]
+
+  const rowSelectionModel: GridRowSelectionModel = {
+    type: 'include',
+    ids: new Set(selectedInscrit ? [selectedInscrit.nComiti] : [])
+  }
+
   const rowSelectionChanged = (newRowSelectionModel: GridRowSelectionModel) => {
-    console.log(newRowSelectionModel)
     const nComiti = newRowSelectionModel.ids.values().next().value ?? 0
     dispatch(inscritSelected(inscrits[nComiti]))
   }
+
   return (
     <>
       <p>Le tableau ici</p>
@@ -46,6 +53,7 @@ export const TableauInscrits = () => {
           columns={columns}
           rows={data}
           getRowId={(row) => row.nComiti}
+          rowSelectionModel={rowSelectionModel}
           onRowSelectionModelChange={rowSelectionChanged}
         />
       </div>
