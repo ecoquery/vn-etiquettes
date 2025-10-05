@@ -6,7 +6,8 @@ import {
   inscritSelected,
   Offre,
   selectInscrits,
-  selectSelected
+  selectSelected,
+  stringOfOffre
 } from '../features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -15,10 +16,6 @@ export const TableauInscrits = () => {
   const inscrits = useSelector(selectInscrits)
   const selectedInscrit = useSelector(selectSelected)
 
-  const stringOfOffre = (o: Offre) => {
-    const sCr = o.creneaux.map((cr) => `${cr.lieu} - ${cr.heure}`).join(', ')
-    return `${o.titreCourt} - ${sCr}`
-  }
   const data = Object.values(inscrits).map((x) => ({
     ...x,
     offres: x.offres.map(stringOfOffre).join('; ')

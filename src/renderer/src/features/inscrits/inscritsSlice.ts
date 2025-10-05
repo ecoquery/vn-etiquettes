@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { act } from 'react'
 
 const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
@@ -72,6 +73,10 @@ export interface InscritsState {
   inscrits: Record<number, Inscrit>
   selected: Inscrit | undefined
   status: 'idle' | 'loading' | 'failed'
+  activites: string[]
+  offres: Offre[]
+  selectedActivite: string | undefined
+  selectedOffre: Offre | undefined
 }
 
 /** regex used to parse lieux et horaires */
@@ -204,6 +209,45 @@ export function parseDateInscription(row: Record<string, string>): string {
 }
 
 /**
+ * Comparison function for strings containing a number. The number part is
+ * compared using its value, not its representation.
+ * @param s1 first string to compare
+ * @param s2 second string to compare
+ * @return 0 if strings are equal, -1 if s1 is before s2, 1 else
+ */
+export function stringWithNumberCompare(s1: string, s2: string): number {
+  if (s1 === s2) {
+    return 0
+  }
+  const extractPartsRe = /^(?<prefix>\D*)(?<num>\d*)(?<suffix>(\D.*)?)$/
+  const m1 = s1.match(extractPartsRe)
+  const m2 = s2.match(extractPartsRe)
+  const prefixCmp = (m1?.groups?.prefix ?? '').localeCompare(m2?.groups?.prefix ?? '')
+  if (prefixCmp != 0) {
+    return prefixCmp
+  } else {
+    const num1 = Number(m1?.groups?.num ?? 0)
+    const num2 = Number(m2?.groups?.num ?? 0)
+    const numCmp = num1 - num2
+    if (numCmp != 0) {
+      return numCmp
+    } else {
+      return (m1?.groups?.suffix ?? '').localeCompare(m2?.groups?.suffix ?? '')
+    }
+  }
+}
+
+/**
+ * Compare deux offres selon leur titre court.
+ * @param o1 première offre
+ * @param o2 deuxième offre
+ * @returns 0 si elles ont le même titre court, -1 si la première est avant la deuxième, 1 sinon
+ */
+export function compareOffre(o1: Offre, o2: Offre): number {
+  return stringWithNumberCompare(o1.titreCourt, o2.titreCourt)
+}
+
+/**
  * Mets à jour les informations des inscrits des données du fichier comiti
  * @param rows les lignes du fichier comiti
  */
@@ -213,6 +257,7 @@ export function updateStateWithComitiData(
 ) {
   const inscrits: Record<number, Inscrit> = {}
   const offres: Record<number, Offre> = {}
+  const activites: Set<string> = new Set()
   for (const row of rows) {
     if (row[cNumeroComiti] === '') {
       continue // ligne vide
@@ -224,6 +269,7 @@ export function updateStateWithComitiData(
         continue // Cette offre ne donne pas lieu à être affichée sur une carte
       } else {
         offres[numOffre] = offre
+        activites.add(offre.activite)
       }
     }
     const numInscrit = Number(row[cNumeroComiti])
@@ -239,12 +285,31 @@ export function updateStateWithComitiData(
   }
   state.inscrits = inscrits
   state.selected = undefined
+  state.activites = new Array(...activites.values()).toSorted(stringWithNumberCompare)
+  state.selectedActivite = undefined
+  state.offres = Object.values(offres).toSorted(compareOffre)
+  state.selectedOffre = undefined
+}
+
+/**
+ * Une string pour afficher une offre avec ses créneaux.
+ * @param o L'offre à afficher
+ * @returns Une chaîne représentant l'offre
+ */
+export const stringOfOffre = (o: Offre) => {
+  const sCr =
+    o.creneaux.map((cr) => `${cr.lieu} - ${cr.heure}`)[0] + (o.creneaux.length > 1 ? ', ...' : '')
+  return `${o.titreCourt} - ${sCr}`
 }
 
 const initialState: InscritsState = {
   inscrits: {},
   selected: undefined,
-  status: 'idle'
+  status: 'idle',
+  activites: [],
+  offres: [],
+  selectedActivite: undefined,
+  selectedOffre: undefined
 }
 
 export const inscritsSlice = createSlice({
@@ -256,12 +321,27 @@ export const inscritsSlice = createSlice({
     },
     inscritSelected: (state, action: PayloadAction<Inscrit | undefined>) => {
       state.selected = action.payload
+    },
+    activiteSelected: (state, action: PayloadAction<string | undefined>) => {
+      if (action.payload === '') {
+        state.selectedActivite = undefined
+      } else {
+        state.selectedActivite = action.payload
+      }
+      state.selectedOffre = undefined
+    },
+    offreSelected: (state, action: PayloadAction<number | undefined>) => {
+      state.selectedOffre = state.offres.find((o) => o.nOffre == action.payload)
+      if (state.selectedOffre !== undefined) {
+        state.selectedActivite = state.selectedOffre.activite
+      }
     }
   }
 })
 
 // Export the generated action creators for use in components
-export const { updateWithComitiData, inscritSelected } = inscritsSlice.actions
+export const { updateWithComitiData, inscritSelected, activiteSelected, offreSelected } =
+  inscritsSlice.actions
 
 // Export the slice reducer for use in the store configuration
 export default inscritsSlice.reducer
@@ -272,3 +352,7 @@ export default inscritsSlice.reducer
 export const selectInscrits = (state: RootState) => state.inscrits.inscrits
 export const selectSelected = (state: RootState) => state.inscrits.selected
 export const selectStatus = (state: RootState) => state.inscrits.status
+export const selectActivites = (state: RootState) => state.inscrits.activites
+export const selectSelectedActivite = (state: RootState) => state.inscrits.selectedActivite
+export const selectOffres = (state: RootState) => state.inscrits.offres
+export const selectSelectedOffre = (state: RootState) => state.inscrits.selectedOffre
