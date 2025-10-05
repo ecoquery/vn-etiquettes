@@ -56,10 +56,11 @@ export default function SelecteurGroupes() {
           <Select
             labelId="offre-select-label2"
             id="offre-simple-select"
-            value={(selectedOffre?.nOffre ?? '') + ''}
+            value={selectedOffre ? String(selectedOffre.nOffre) : toutes}
             label="Offre"
             onChange={handleChangeOffre}
           >
+            <MenuItem value={toutes}>Toutes</MenuItem>
             {filteredOffres.map((o) => (
               <MenuItem key={o.nOffre} value={o.nOffre + ''}>
                 {stringOfOffre(o)}

@@ -1,5 +1,4 @@
 import { Stack } from '@mui/material'
-import { ComitiFileHandler } from './ComitiFileHandler'
 import { TableauInscrits } from './TableauInscrits'
 import SelecteurGroupes from './SelecteurGroupes'
 

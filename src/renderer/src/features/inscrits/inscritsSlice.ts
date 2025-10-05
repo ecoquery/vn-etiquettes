@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
-import { act } from 'react'
 
 const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
@@ -289,6 +288,11 @@ export function updateStateWithComitiData(
   state.selectedActivite = undefined
   state.offres = Object.values(offres).toSorted(compareOffre)
   state.selectedOffre = undefined
+
+  // tri des offres pour chaque inscrit
+  for (const inscrit of Object.values(state.inscrits)) {
+    inscrit.offres.sort(compareOffre)
+  }
 }
 
 /**

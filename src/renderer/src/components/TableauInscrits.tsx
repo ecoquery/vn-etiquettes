@@ -1,12 +1,13 @@
-// TODO: Setup filters: activities, offres, date d'inscription, see #5
-// TODO: option pour assurer qu'un inscrit n'est affiché que dans une activité, même s'il est inscrit à plusieurs activités, see #4
+// TODO: Setup filters: date d'inscription, see #5
 
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
 import {
+  Inscrit,
   inscritSelected,
-  Offre,
   selectInscrits,
   selectSelected,
+  selectSelectedActivite,
+  selectSelectedOffre,
   stringOfOffre
 } from '../features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -15,11 +16,26 @@ export const TableauInscrits = () => {
   const dispatch = useDispatch()
   const inscrits = useSelector(selectInscrits)
   const selectedInscrit = useSelector(selectSelected)
+  const selectedActivite = useSelector(selectSelectedActivite)
+  const selectedOffre = useSelector(selectSelectedOffre)
 
-  const data = Object.values(inscrits).map((x) => ({
-    ...x,
-    offres: x.offres.map(stringOfOffre).join('; ')
-  }))
+  const inscritsFilter = (inscrit: Inscrit) => {
+    if (selectedOffre) {
+      return inscrit.offres[0].nOffre === selectedOffre.nOffre
+    } else if (selectedActivite) {
+      return inscrit.offres.some((o) => o.activite === selectedActivite)
+    } else {
+      return true
+    }
+  }
+
+  const data = Object.values(inscrits)
+    .filter(inscritsFilter)
+    .map((x) => ({
+      ...x,
+      offres: x.offres.map(stringOfOffre).join('; ')
+    }))
+
   const columns: GridColDef<(typeof data)[number]>[] = [
     {
       field: 'nComiti',
