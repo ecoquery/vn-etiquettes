@@ -1,6 +1,11 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { join } from 'node:path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import {
+  installExtension,
+  REACT_DEVELOPER_TOOLS,
+  REDUX_DEVTOOLS
+} from 'electron-devtools-installer'
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
@@ -39,6 +44,10 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  installExtension([REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS])
+    .then((ext) => console.log(`Added Extension:  ${ext.map((x) => x.name)}`))
+    .catch((err) => console.log('An error occurred: ', err))
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 

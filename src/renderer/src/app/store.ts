@@ -3,7 +3,8 @@ import inscritReducer from '../features/inscrits/inscritsSlice'
 import impressionReducer from '../features/impression/impressionSlice'
 
 export const store = configureStore({
-  reducer: { inscrits: inscritReducer, impression: impressionReducer }
+  reducer: { inscrits: inscritReducer, impression: impressionReducer },
+  devTools: true
 })
 
 // Infer the type of `store`
