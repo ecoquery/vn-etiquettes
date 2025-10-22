@@ -81,19 +81,17 @@ export const TableauInscrits = () => {
     }
   }
 
-  if (selectedInscrit !== undefined) {
-    if (rowIndex !== -1) {
-      if (userSelection !== selectedInscrit.nComiti) {
-        const expectedPage = Math.floor(rowIndex / paginationModel.pageSize)
-        if (expectedPage != paginationModel.page) {
-          console.log(`changing page ${paginationModel.page} to ${expectedPage}`)
-          setPaginationModel({ ...paginationModel, page: expectedPage })
-        }
-        setUserSelection(selectedInscrit.nComiti)
-        console.log('do scrolling to ', rowIndex)
-        apiRef.current?.scrollToIndexes({ rowIndex })
-      }
+  if (
+    selectedInscrit !== undefined &&
+    rowIndex !== -1 &&
+    userSelection !== selectedInscrit.nComiti
+  ) {
+    const expectedPage = Math.floor(rowIndex / paginationModel.pageSize)
+    if (expectedPage != paginationModel.page) {
+      setPaginationModel({ ...paginationModel, page: expectedPage })
     }
+    setUserSelection(selectedInscrit.nComiti)
+    apiRef.current?.scrollToIndexes({ rowIndex })
   }
 
   return (

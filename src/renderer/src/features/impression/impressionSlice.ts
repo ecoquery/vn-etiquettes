@@ -127,11 +127,15 @@ export const impressionSlice = createSlice({
     },
     setStopImpression: (state, action: PayloadAction<boolean>) => {
       state.stopImpression = action.payload
+    },
+    setSimulatePrint: (state, action:PayloadAction<boolean>)=>{
+      state.simulatePrint = action.payload
     }
   }
 })
 
-export const { nextPrint, resetPrints, setPrintQueue, setStopImpression } = impressionSlice.actions
+export const { nextPrint, resetPrints, setPrintQueue, setStopImpression, setSimulatePrint } =
+  impressionSlice.actions
 export default impressionSlice.reducer
 export const selectIdxImpression = (state: RootState) => state.impression.idxImpression
 export const selectImpressionQueue = (state: RootState) => state.impression.impressionQueue

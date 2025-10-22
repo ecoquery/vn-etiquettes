@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import Etiquette from './Etiquette'
 import { useState } from 'react'
 import { Button, Checkbox, FormControlLabel, Paper, Stack, TextField } from '@mui/material'
-import { printAll } from '@renderer/features/impression/impressionSlice'
+import { printAll, setSimulatePrint } from '@renderer/features/impression/impressionSlice'
 
 export const GestionImpression = ({ dymo }) => {
   const dispatch = useDispatch()
@@ -15,32 +15,46 @@ export const GestionImpression = ({ dymo }) => {
       <Paper>
         <Etiquette inscrit={selectedInscrit} saison={saison} dymo={dymo} />
       </Paper>
-      <Button variant="contained" disabled>
-        Imprimer cette étiquette
-      </Button>
-      <TextField
-        type="number"
-        label="Nombre d'étiquettes à imprimer"
-        fullWidth
-        value={nbPrint}
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          const nb = Number(event.target.value)
-          setNbPrint(Math.max(nb, 0))
-        }}
-      />
       <Button
         variant="contained"
         onClick={() => {
-          dispatch(printAll(dymo, saison, nbPrint))
+          dispatch(printAll(dymo, saison, 1))
         }}
       >
-        Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}
+        Imprimer cette étiquette
       </Button>
+      <Stack direction="row" alignItems="center" alignContent={'center'} spacing={2}>
+        <TextField
+          type="number"
+          label="Nombre d'étiquettes à imprimer"
+          fullWidth
+          value={nbPrint}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            const nb = Number(event.target.value)
+            setNbPrint(Math.max(nb, 0))
+          }}
+        />
+        <Button
+          variant="contained"
+          onClick={() => {
+            dispatch(printAll(dymo, saison, nbPrint))
+          }}
+        >
+          Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}
+        </Button>
+      </Stack>
+
       <Stack direction="row" alignContent="left" spacing={2} width={'100%'}>
         <FormControlLabel
-          control={<Checkbox defaultChecked />}
+          control={
+            <Checkbox
+              defaultChecked
+              onChange={(event) => {
+                dispatch(setSimulatePrint(event.target.checked))
+              }}
+            />
+          }
           label="Simuler l'impression"
-          disabled
         />
       </Stack>
     </Stack>
