@@ -1,16 +1,19 @@
 import { selectSelected } from '../features/inscrits/inscritsSlice'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import Etiquette from './Etiquette'
 import { useState } from 'react'
 import { Button, Checkbox, FormControlLabel, Paper, Stack, TextField } from '@mui/material'
+import { printAll } from '@renderer/features/impression/impressionSlice'
 
 export const GestionImpression = ({ dymo }) => {
+  const dispatch = useDispatch()
   const selectedInscrit = useSelector(selectSelected)
   const [nbPrint, setNbPrint] = useState(1)
+  const saison = '2025-2026'
   return (
     <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <Paper>
-        <Etiquette inscrit={selectedInscrit} saison={'2025-2026'} dymo={dymo} />
+        <Etiquette inscrit={selectedInscrit} saison={saison} dymo={dymo} />
       </Paper>
       <Button variant="contained" disabled>
         Imprimer cette étiquette
@@ -22,10 +25,15 @@ export const GestionImpression = ({ dymo }) => {
         value={nbPrint}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           const nb = Number(event.target.value)
-          setNbPrint(nb < 0 ? 0 : nb)
+          setNbPrint(Math.max(nb, 0))
         }}
       />
-      <Button variant="contained" disabled>
+      <Button
+        variant="contained"
+        onClick={() => {
+          dispatch(printAll(dymo, saison, nbPrint))
+        }}
+      >
         Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}
       </Button>
       <Stack direction="row" alignContent="left" spacing={2} width={'100%'}>

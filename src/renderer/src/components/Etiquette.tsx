@@ -20,7 +20,7 @@ function formatOffre(o: Offre) {
   }
 }
 
-function formatOffres(offres: Array<Offre>) {
+export function formatOffres(offres: Array<Offre>) {
   return offres.map(formatOffre).join('\n')
 }
 

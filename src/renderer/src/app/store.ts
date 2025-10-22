@@ -1,7 +1,10 @@
 import { configureStore, type Action, type ThunkAction } from '@reduxjs/toolkit'
 import inscritReducer from '../features/inscrits/inscritsSlice'
+import impressionReducer from '../features/impression/impressionSlice'
 
-export const store = configureStore({ reducer: { inscrits: inscritReducer } })
+export const store = configureStore({
+  reducer: { inscrits: inscritReducer, impression: impressionReducer }
+})
 
 // Infer the type of `store`
 export type AppStore = typeof store

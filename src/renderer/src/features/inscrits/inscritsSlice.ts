@@ -66,6 +66,14 @@ export interface Inscrit {
 }
 
 /**
+ * Sort model, compatible with Data Grid from MUI X
+ * see https://mui.com/x/api/data-grid/data-grid/#data-grid-prop-sortingOrder
+ */
+export interface SortModel {
+  field: string; sort: 'asc' | 'desc' | undefined | null
+}
+
+/**
  * Application internal state on comiti data
  */
 export interface InscritsState {
@@ -76,6 +84,7 @@ export interface InscritsState {
   offres: Offre[]
   selectedActivite: string | undefined
   selectedOffre: Offre | undefined
+  sortModel: SortModel
 }
 
 /** regex used to parse lieux et horaires */
@@ -306,6 +315,52 @@ export const stringOfOffre = (o: Offre) => {
   return `${o.titreCourt} - ${sCr}`
 }
 
+/**
+ * Crée un filtre correspondant à une offre et une activité
+ * @param offre offre sélectionnée
+ * @param activite activité sélectionnée
+ * @returns un filtre qui ne garde que les inscrits correspondant à l'offre et à l'activité
+ */
+export const inscritsFilter =
+  (offre: Offre | undefined, activite: string | undefined) => (inscrit: Inscrit) => {
+    if (offre) {
+      return inscrit.offres[0].nOffre === offre.nOffre
+    } else if (activite) {
+      return inscrit.offres.some((o) => o.activite === activite)
+    } else {
+      return true
+    }
+  }
+
+  /**
+   * Produit un comparateur d'Inscrit sur la base du modèle de tri passé en argument.
+   * @param model le critère de tri
+   * @returns une fonction de comparaison d'inscrit pour trier un tableau d'inscrits
+   */
+  export const compareInscrit = (model: SortModel) => (a: Inscrit, b: Inscrit) => {
+    let cmp = 0
+    switch (model.field) {
+      case 'nComiti':
+        cmp = a.nComiti - b.nComiti
+        break;
+      case 'nom':
+        cmp = a.nom.localeCompare(b.nom)
+        break;
+      case 'offres':
+          cmp = compareOffre(a.offres[0],b.offres[0])
+          break;
+      default:
+        console.log(`Critère de tri inconnu: ${model.field}`)
+        break;
+    }
+    if (model.sort === 'desc') {
+      cmp = -cmp
+    }
+    return cmp
+  }
+
+export const defaultSortModel: SortModel = { field: 'nom', sort: 'asc' }
+
 const initialState: InscritsState = {
   inscrits: {},
   selected: undefined,
@@ -313,7 +368,8 @@ const initialState: InscritsState = {
   activites: [],
   offres: [],
   selectedActivite: undefined,
-  selectedOffre: undefined
+  selectedOffre: undefined,
+  sortModel: defaultSortModel
 }
 
 export const inscritsSlice = createSlice({
@@ -339,13 +395,22 @@ export const inscritsSlice = createSlice({
       if (state.selectedOffre !== undefined) {
         state.selectedActivite = state.selectedOffre.activite
       }
+    },
+    sortModelChanged: (state, action: PayloadAction<SortModel>) => {
+      state.sortModel = action.payload
+      console.log(state.sortModel)
     }
   }
 })
 
 // Export the generated action creators for use in components
-export const { updateWithComitiData, inscritSelected, activiteSelected, offreSelected } =
-  inscritsSlice.actions
+export const {
+  updateWithComitiData,
+  inscritSelected,
+  activiteSelected,
+  offreSelected,
+  sortModelChanged
+} = inscritsSlice.actions
 
 // Export the slice reducer for use in the store configuration
 export default inscritsSlice.reducer
@@ -360,3 +425,4 @@ export const selectActivites = (state: RootState) => state.inscrits.activites
 export const selectSelectedActivite = (state: RootState) => state.inscrits.selectedActivite
 export const selectOffres = (state: RootState) => state.inscrits.offres
 export const selectSelectedOffre = (state: RootState) => state.inscrits.selectedOffre
+export const selectSortModel = (state: RootState) => state.inscrits.sortModel
