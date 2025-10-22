@@ -1,7 +1,5 @@
 import Versions from './components/Versions'
 import { JSX } from 'react'
-import { useSelector } from 'react-redux'
-import { selectSelected } from './features/inscrits/inscritsSlice'
 import { GestionInscrits } from './components/GestionInscrits'
 import { GestionImpression } from './components/GestionImpression'
 import { AppBar, Container, Grid, Toolbar, Typography } from '@mui/material'
