@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { compareInscrit, Inscrit, inscritSelected, inscritsFilter } from '../inscrits/inscritsSlice'
 import { genereLabelContent } from '../../app/Dymo'
 import { formatOffres } from '../../components/Etiquette'
-import { RootState } from '@renderer/app/store'
+import { AppThunk, RootState } from '@renderer/app/store'
 
 const PRINT_DELAY = 2000
 
@@ -70,12 +70,14 @@ export const makeInscritsToPrint = (state: RootState, nbToPrint: number) => {
  * @param nbToPrint nombre d'étiquette à imprimer dans le batch
  * @returns la fonction thunk qui va déclencher l'impression
  */
-export const printAll = (dymo, saison: string, nbToPrint: number) => async (dispatch, getState) => {
-  const inscritsToPrint = makeInscritsToPrint(getState(), nbToPrint)
-  dispatch(setPrintQueue(inscritsToPrint))
-  dispatch(setStopImpression(false))
-  dispatch(printQueue(dymo, saison))
-}
+export const printAll =
+  (dymo, saison: string, nbToPrint: number): AppThunk =>
+  async (dispatch, getState) => {
+    const inscritsToPrint = makeInscritsToPrint(getState(), nbToPrint)
+    dispatch(setPrintQueue(inscritsToPrint))
+    dispatch(setStopImpression(false))
+    dispatch(printQueue(dymo, saison))
+  }
 
 /**
  * Application internal state for printing

@@ -117,7 +117,7 @@ export function extractPiscine(data: string): string | undefined {
       console.error('Piscine not found in ', matched)
       return undefined
     }
-    if (sansCarte.indexOf(piscine) >= 0) {
+    if (sansCarte.includes(piscine)) {
       return undefined // pas de carte pour cette piscine
     }
     return piscineAliases[piscine ?? 'erreur'] ?? piscine
@@ -165,7 +165,7 @@ export function extractTitreCourt(data: string): string | undefined {
     groupeAliases[data]
   if (shortName) {
     return shortName
-  } else if (groupesAIgnorer.indexOf(data) >= 0) {
+  } else if (groupesAIgnorer.includes(data)) {
     return undefined
   } else {
     console.error(`Failed to extract groupe from '${data}'`)
@@ -228,20 +228,20 @@ export function stringWithNumberCompare(s1: string, s2: string): number {
     return 0
   }
   const extractPartsRe = /^(?<prefix>\D*)(?<num>\d*)(?<suffix>(\D.*)?)$/
-  const m1 = s1.match(extractPartsRe)
-  const m2 = s2.match(extractPartsRe)
+  const m1 = extractPartsRe.exec(s1)
+  const m2 = extractPartsRe.exec(s2)
   const prefixCmp = (m1?.groups?.prefix ?? '').localeCompare(m2?.groups?.prefix ?? '')
-  if (prefixCmp != 0) {
-    return prefixCmp
-  } else {
+  if (prefixCmp == 0) {
     const num1 = Number(m1?.groups?.num ?? 0)
     const num2 = Number(m2?.groups?.num ?? 0)
     const numCmp = num1 - num2
-    if (numCmp != 0) {
-      return numCmp
-    } else {
+    if (numCmp == 0) {
       return (m1?.groups?.suffix ?? '').localeCompare(m2?.groups?.suffix ?? '')
+    } else {
+      return numCmp
     }
+  } else {
+    return prefixCmp
   }
 }
 

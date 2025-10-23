@@ -4,9 +4,10 @@ import Etiquette from './Etiquette'
 import { useState } from 'react'
 import { Button, Checkbox, FormControlLabel, Paper, Stack, TextField } from '@mui/material'
 import { printAll, setSimulatePrint } from '@renderer/features/impression/impressionSlice'
+import { AppDispatch } from '@renderer/app/store'
 
 export const GestionImpression = ({ dymo }) => {
-  const dispatch = useDispatch()
+  const dispatch: AppDispatch = useDispatch()
   const selectedInscrit = useSelector(selectSelected)
   const [nbPrint, setNbPrint] = useState(1)
   const saison = '2025-2026'
