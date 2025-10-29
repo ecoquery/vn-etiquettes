@@ -2,12 +2,14 @@
 
 ## Rendre configurable
 
-- Année
-- Mappings dénom. créneaux -> affichage étiquette
-- Liste des créneaux sans étiquette
+- [x] Année
+- [x] Mappings dénom. créneaux -> affichage étiquette
+- [x] Liste des créneaux sans étiquette
 
--> faire un éditeur de config ?
--> sous forme de fichier js qui pourra être chargé automatiquement au chargement ?
+- faire un éditeur de config ?
+- [x] sous forme de fichier js qui pourra être chargé automatiquement au chargement ?
 
 - modifier une étiquette à la volée
-- chercher les piscines et les horaires and l'export comiti
+- [x]chercher les piscines et les horaires dans l'export comiti
+
+## Bugs

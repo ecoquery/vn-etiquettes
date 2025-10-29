@@ -1,6 +1,7 @@
-// Faire des étiquettes nominatives et avec la liste des créneaux
-// Impr par ordre alpha par activite
-// prévoir d'imprimer en plusieurs fois
+const C_NumOffre = "Numéro offre";
+const C_LieuxHoraires = "Lieux et horaires";
+const C_NomSpecifiqueActivite = "Nom spécifique activité";
+const C_Categorie = "Catégorie";
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,6 +195,12 @@ function printAll(data, membres, onlyPreview, tempo, remain, idx) {
   updatePage(data);
   console.log("Only preview: ", data.onlyPreview);
   if (!data.onlyPreview) {
+    const m = data.membreAffiche;
+    const labelData = genereLabelContent(
+      m.nom,
+      m.offres.map((o) => data.offres[o].etiquette).join("\n"),
+      etiquettesConfig.saison
+    );
     let label = dymo.label.framework.openLabelXml(labelData);
     console.log(label, data.printers);
     label.print(data.printers[0]);
@@ -217,7 +224,7 @@ function printAll(data, membres, onlyPreview, tempo, remain, idx) {
  */
 function litDate(dateString) {
   if (dateString) {
-    [d, m, y, ..._] = dateString.split("-");
+    const [d, m, y] = dateString.split("-");
     return new Date(Number(y), Number(m) - 1, Number(d));
   } else {
     return undefined;
@@ -230,23 +237,25 @@ function litDate(dateString) {
  * @returns donnes agrégées par membre
  */
 function makeDonneesMembres(data, comitiData) {
-  membres = {};
-  for (row of comitiData) {
-    id = row["Numéro Comiti"];
+  const membres = {};
+  for (const row of comitiData) {
+    const id = row["Numéro Comiti"];
     if (membres[id] === undefined) {
       membres[id] = [];
     }
     membres[id].push(row);
   }
-  result = {};
-  for (id in membres) {
-    rows = membres[id];
-    m = {
+  const result = {};
+  for (const id in membres) {
+    const rows = membres[id];
+    let lesOffres = rows
+      .map((r) => r[C_NumOffre])
+      .filter((o) => data.offres[o]);
+    lesOffres.sort(compareOffres(data));
+    const m = {
       id: id,
       nom: rows[0]["Nom"] + " " + rows[0]["Prénom"],
-      creneaux: rows
-        .map((r) => r["Catégorie"])
-        .filter((c) => data.sansEtiquette.indexOf(c) < 0),
+      offres: lesOffres,
       dateInscr: Math.min(
         ...rows.map((r) => r["Date d'inscription"]).map(litDate)
       ),
@@ -259,56 +268,165 @@ function makeDonneesMembres(data, comitiData) {
 /**
  * Filtre les membres pour la sélection d'activité /  de catégorie en cours
  * @param {*} data les donnes de l'application
- * @param {*} categorie la categorie sélectionnée ou undefined
- * @param {*} activite l'activité selectionnée
  */
 function membresPourCategorieActivite(data) {
-  categorie = data.categorie;
-  activite = data.activite;
+  const offre = data.offre;
+  const activite = data.activite;
   if (data.comiti === undefined) {
     return [];
   }
-  membres = Object.values(makeDonneesMembres(data, data.comiti));
+  const membres = Object.values(makeDonneesMembres(data, data.comiti));
   let filterFunction;
-  if (categorie !== undefined && categorie !== "tout") {
-    console.log("filtering wrt categorie " + categorie);
-    filterFunction = (m) => m.creneaux.some((c) => c === categorie);
+  if (offre !== undefined && offre !== "tout") {
+    console.log(offre, typeof offre, data.offre[offre]);
+    console.log(
+      `filtering wrt offre ${data.offres[offre].categorie} (${offre})`
+    );
+    filterFunction = (m) => m.offres.some((o) => o === offre);
   } else if (activite !== undefined) {
     console.log("filtering wrt activite " + activite);
     filterFunction = (m) =>
-      m.creneaux.some((c) => data.categorieActivite[c] === activite);
+      m.offres.some((o) => data.offres[o].activite === activite);
   } else {
-    // console.log("Nobody");
+    // Nobody
     filterFunction = (m) => false;
   }
-  filterFrom = data.from ? (m) => m.dateInscr >= data.from : (m) => true;
-  filterTo = data.to ? (m) => m.dateInscr <= data.to : (m) => true;
-  result = membres.filter(filterFunction).filter(filterFrom).filter(filterTo);
+  const filterFrom = data.from ? (m) => m.dateInscr >= data.from : (m) => true;
+  const filterTo = data.to ? (m) => m.dateInscr <= data.to : (m) => true;
+  const result = membres
+    .filter(filterFunction)
+    .filter(filterFrom)
+    .filter(filterTo);
   return result;
 }
 
 /**
- * Ajoute le lien catégorie -> activite dans le champs categorieActivite des données de l'application
- * @param {*} data les donnes de l'application
+ * Calcule le nom d'un groupe à afficher
+ * @param {string} g le nom du groupe dans comiti
  */
-function addCategorieActiviteMapping(data) {
-  if (data.comiti === undefined) {
-    data.categorieActivite = undefined;
-  } else {
-    m = {};
-    for (raw of data.comiti) {
-      categorie = raw["Catégorie"];
-      activite = raw["Nom spécifique activité"];
-      if (
-        categorie !== undefined &&
-        activite !== undefined &&
-        m[categorie] === undefined
-      ) {
-        m[categorie] = activite;
+function parseGroupe(g) {
+  /** essaie d'extraire un groupe à partir d'une regex */
+  function t(re) {
+    const m = re.exec(g);
+    if (m) {
+      return m[1];
+    } else {
+      return false;
+    }
+  }
+  return (
+    t(/Dauphin Bronze - (DB\d\d?)/) ||
+    t(/Dauphin Argent - (DA\d\d?)/) ||
+    t(/Dauphin Or - (DO\d\d?)/) ||
+    t(/Jeunes - (J\d-\d) - 10-13 ans - Maitrise [13]-[24] nages/) ||
+    t(/ADO - (A\d-\d) - 14-17 ans - Maitrise [13]-[24] nages/) ||
+    t(/(ADU\d\d?).*/) ||
+    etiquettesConfig.nomGroupe[g]
+  );
+}
+
+/**
+ * Compare groups for sorting
+ * @param {string} g1 first group
+ * @param {string} g2 second group
+ * @returns comparison value for sorting
+ */
+function compareGroupes(g1, g2) {
+  for (const prefix of ["ADU", "DO1", "DA", "DB"]) {
+    if (g1.startsWith(prefix) && g2.startsWith(prefix)) {
+      const n1 = Number(g1.substring(prefix.length));
+      const n2 = Number(g2.substring(prefix.length));
+      if (n1 && n2) {
+        return n1 - n2;
       }
     }
-    data.categorieActivite = m;
   }
+  return g1 < g2 ? -1 : g1 > g2 ? 1 : 0;
+}
+
+/**
+ * Fonction de comparaison des offres
+ * @param {object} data Les données de l'application
+ * @returns un comparateur d'offres
+ */
+function compareOffres(data) {
+  function cmp(o1, o2) {
+    return compareGroupes(data.offres[o1].groupe, data.offres[o2].groupe);
+  }
+  return cmp;
+}
+
+/**
+ * Construit un créneau à placer sur une étiquette
+ * @param {string} offre le numéro d'offre
+ * @param {string} lieuxHoraires le créneau dans comiti
+ * @param {string} categorie la catégorie, utilisée pour le nom du groupe
+ * @returns
+ */
+function getEtiquette(offre, lieuxHoraires, categorie) {
+  // Regex pour parser le lieu, le jour et l'heure
+  // Par exemple "Centre Nautique Etienne Gagnaire Lundi : 20h00 - 22h00"
+  const re = /(?<lieu>\S[^,]*)\s(?<jour>\S+)\s:\s(?<heure>\d\dh\d\d).*/;
+  const parsed = re.exec(lieuxHoraires);
+  if (!parsed) {
+    console.error(
+      `Failed to parse lieu horaires "${lieuxHoraires}", catégorie ${categorie}`
+    );
+    return;
+  }
+  let { lieu, jour, heure } = parsed.groups;
+  lieu = etiquettesConfig.lieux[lieu];
+  const groupe = parseGroupe(categorie);
+  if (lieu === undefined && parsed.groups.lieu != "Compétition") {
+    console.error(`Lieu inconnu: "${parsed.groups.lieu}"`);
+    return undefined;
+  } else if (lieu === "") {
+    // Pas d'étiquette pour les créneaux dans ce lieu
+    return undefined;
+  } else if (!groupe) {
+    if (etiquettesConfig.sansEtiquette.indexOf(categorie) < 0) {
+      console.error(
+        `Groupe non reconnu: ${offre} : "${categorie}", l'ajouter dans nomGroupe par exemple "${categorie}": "${categorie}", ou bien dans sansEtiquette par exemple ${categorie},`
+      );
+    }
+    return undefined;
+  } else if (
+    etiquettesConfig.sansLieu.indexOf(offre) === -1 &&
+    etiquettesConfig.sansLieu.indexOf(categorie) === -1
+  ) {
+    return `${groupe} - ${jour.substring(0, 3)} ${heure} - ${lieu}`;
+  } else {
+    return groupe;
+  }
+}
+
+/**
+ * Ajoute un lien numéro d'offre vers les informations de créneau
+ */
+function addOffreInfos(data) {
+  if (data.comiti === undefined) {
+    console.log("No comiti data");
+    data.offres = undefined;
+    return;
+  }
+  const offres = {};
+  for (const row of data.comiti) {
+    const o = row[C_NumOffre];
+    if (!o) continue; // traitement d'une ligne vide
+    if (offres[o] === undefined) {
+      const etiquette = getEtiquette(o, row[C_LieuxHoraires], row[C_Categorie]);
+      if (etiquette !== undefined) {
+        offres[o] = {
+          offre: o,
+          categorie: row[C_Categorie],
+          etiquette: etiquette,
+          activite: row[C_NomSpecifiqueActivite],
+          groupe: parseGroupe(row[C_Categorie]),
+        };
+      }
+    }
+  }
+  data.offres = offres;
 }
 
 /**
@@ -317,19 +435,19 @@ function addCategorieActiviteMapping(data) {
  * @param {*} comitiData donnes comiti
  */
 function getComitiValues(colonne, comitiData) {
-  rawValues = comitiData
+  const rawValues = comitiData
     .map((x) => x[colonne])
     .filter((x) => x !== undefined && x !== "");
-  dictinctValues = [...new Set(rawValues)].sort();
+  const dictinctValues = [...new Set(rawValues)].sort();
   return dictinctValues;
 }
 
 /**
- * Renvoie les différentes categories présentes dans les données comiti.
+ * Renvoie les différentes offres présentes dans les données comiti.
  * @param {*} comitiData donnes comiti
  */
-function getCategories(comitiData) {
-  return getComitiValues("Catégorie", comitiData);
+function getOffres(comitiData) {
+  return getComitiValues(C_NumOffre, comitiData);
 }
 
 /**
@@ -341,31 +459,17 @@ function getActivites(comitiData) {
 }
 
 /**
- * Affiche dans la console les catégories qui ne sont pas mappées dans le
- * dictionnaire afficheCrenaux.
- * @param {*} data les données de l'application
- */
-function logCategorieManquantesDansAfficheCreneaux(data) {
-  data.categories
-    .filter((c) => data.afficheCreneaux[c] === undefined)
-    .filter((c) => data.sansEtiquette.indexOf(c) < 0)
-    .forEach((c) => console.log("Description print manquante: ", c));
-}
-
-/**
  * Mets à jour les données de l'application en fonction des données reçues dans comiti
  * @param {*} data les données de l'application
  * @param {*} comitiData les données issues de comiti
  */
 function updateComitiData(data, comitiData) {
-  // TODO
   console.log(`Le fichier comiti contient ${comitiData.length} lignes`);
   data.comiti = comitiData;
-  addCategorieActiviteMapping(data);
+  addOffreInfos(data);
+  console.log(data);
   data.activites = getActivites(comitiData);
-  data.categories = getCategories(comitiData);
   data.updatedList = true;
-  logCategorieManquantesDansAfficheCreneaux(data);
   updatePage(data);
 }
 
@@ -374,14 +478,9 @@ function updateComitiData(data, comitiData) {
  * @param {*} data les données de l'application
  */
 function updateApplicationData(data) {
-  membres = membresPourCategorieActivite(data, data.categorie, data.activite);
+  const membres = membresPourCategorieActivite(data);
   membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
-  data.membres = membres.map((m) => ({
-    ...m,
-    creneaux: m.creneaux.map((c) =>
-      data.afficheCreneaux[c] !== undefined ? data.afficheCreneaux[c] : c
-    ),
-  }));
+  data.membres = membres;
   if (data.activite === "Aucune" || data.activite === undefined) {
     console.log("Pas d'étiquette");
     data.membreAffiche = undefined;
@@ -433,7 +532,7 @@ function loadComitiFile(data, fileElt) {
  * @param {*} data données de l'application
  */
 function registerComitiFileAction(data) {
-  fileElt = document.getElementById("file-comiti");
+  const fileElt = document.getElementById("file-comiti");
   fileElt.onchange = function () {
     loadComitiFile(data, fileElt);
   };
@@ -444,8 +543,7 @@ function registerComitiFileAction(data) {
  * @param {*} data les données de l'application
  */
 function updateComitiInfos(data) {
-  comitiInfos = document.getElementById("z-comiti-infos");
-  // console.debug(`Updating comiti infos with ${data.comiti}`);
+  const comitiInfos = document.getElementById("z-comiti-infos");
   if (data.comiti !== undefined) {
     comitiInfos.innerHTML = `(${data.comiti.length} inscriptions)`;
   } else {
@@ -463,23 +561,23 @@ function updateCategorieSelect(data) {
   if (data.comiti === undefined) {
     content = `<option selected="selected">Aucune</option>`;
   } else {
-    activite = data.activite;
+    const activite = data.activite;
     content = `<option ${
       data.categorie === "tout" ? `selected="selected"` : ""
     }>tout</option>`;
-    content += data.categories //getCategories(data.comiti)
-      .filter((c) => data.categorieActivite[c] === activite)
-      .map(
-        (c) =>
-          `<option id="${c}" ${
-            data.categorie === c ? `selected="selected"` : ""
-          }>${c}</option>`
-      )
-      .join("");
+    let lesOffres = Object.keys(data.offres).filter(
+      (o) => data.offres[o].activite === activite
+    );
+    lesOffres.sort(compareOffres(data));
+    for (const o of lesOffres) {
+      content += `<option value="${o}" ${
+        data.offre === o ? 'selected="selected"' : ""
+      }>${data.offres[o].categorie}</option>`;
+    }
   }
   catagoriesSelect.innerHTML = content;
   catagoriesSelect.onchange = () => {
-    data.categorie = catagoriesSelect.value;
+    data.offre = catagoriesSelect.value;
     data.membreAffiche = undefined;
     data.updatedList = true;
     updatePage(data);
@@ -496,10 +594,10 @@ function updateActiviteSelect(data) {
   if (data.comiti === undefined) {
     content = `<option selected="selected">Aucune</option>`;
   } else {
-    activites = data.activites;
+    const activites = data.activites;
     if (data.activite === undefined) {
       data.activite = "Aucune"; //activites[0];
-      data.categorie = "tout";
+      data.offre = "tout";
     }
     content = `<option >Aucune</option>`;
     content += activites
@@ -514,7 +612,7 @@ function updateActiviteSelect(data) {
   activiteSelect.innerHTML = content;
   activiteSelect.onchange = () => {
     data.activite = activiteSelect.value;
-    data.categorie = "tout";
+    data.offre = "tout";
     data.updatedList = true;
     updatePage(data);
   };
@@ -526,9 +624,7 @@ function updateActiviteSelect(data) {
  */
 function updateTableMembres(data) {
   if (data.comiti !== undefined) {
-    membres = data.membres;
-    // membresPourCategorieActivite(data, categorie, activite);
-    // membres.sort((a, b) => (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0));
+    const membres = data.membres;
     document.getElementById("tbody-membres").innerHTML = membres
       .map(
         (m) =>
@@ -536,9 +632,11 @@ function updateTableMembres(data) {
             data.membreAffiche && data.membreAffiche.id === m.id
               ? "selectionne"
               : ""
-          }"><td>${m.id}</td><td>${m.nom}</td><td>${m.creneaux.join(
-            ", "
-          )}</td><td>${new Date(m.dateInscr).toLocaleDateString()}</td></tr>`
+          }"><td>${m.id}</td><td>${m.nom}</td><td>${m.offres
+            .map((o) => data.offres[o].etiquette)
+            .join(", ")}</td><td>${new Date(
+            m.dateInscr
+          ).toLocaleDateString()}</td></tr>`
       )
       .join("");
     membres.forEach((m) => {
@@ -557,10 +655,10 @@ function updateTableMembres(data) {
  */
 function updatePreview(data) {
   if (data.membreAffiche !== undefined) {
-    m = data.membreAffiche;
-    labelData = genereLabelContent(
+    const m = data.membreAffiche;
+    const labelData = genereLabelContent(
       m.nom,
-      m.creneaux.join("\n"),
+      m.offres.map((o) => data.offres[o].etiquette).join("\n"),
       etiquettesConfig.saison
     );
     let label = dymo.label.framework.openLabelXml(labelData);
@@ -686,7 +784,6 @@ function setupDatePickers(data) {
 // Actions à effectuer au démarrage de l'application
 document.addEventListener("DOMContentLoaded", function () {
   let data = {
-    afficheCreneaux: etiquettesConfig.afficheCreneaux,
     sansEtiquette: etiquettesConfig.sansEtiquette,
     updatedList: false,
     stopPrint: false,
