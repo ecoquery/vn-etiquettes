@@ -4,7 +4,7 @@ import SelecteurGroupes from './SelecteurGroupes'
 
 export const GestionInscrits = () => {
   return (
-    <Stack alignItems="center" alignContent={'center'}>
+    <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <SelecteurGroupes />
       <TableauInscrits />
     </Stack>

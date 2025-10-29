@@ -55,7 +55,13 @@ const printQueue = (dymo, saison) => async (dispatch, getState: () => RootState)
  */
 export const makeInscritsToPrint = (state: RootState, nbToPrint: number) => {
   const inscrits = Object.values(state.inscrits.inscrits)
-    .filter(inscritsFilter(state.inscrits.selectedOffre, state.inscrits.selectedActivite))
+    .filter(
+      inscritsFilter(
+        state.inscrits.selectedOffre,
+        state.inscrits.selectedActivite,
+        state.inscrits.selectedInscritApres
+      )
+    )
     .toSorted(compareInscrit(state.inscrits.sortModel))
   const selIdx = inscrits.findIndex((inscr) => state.inscrits.selected?.nComiti === inscr.nComiti)
   const start = Math.max(selIdx, 0)

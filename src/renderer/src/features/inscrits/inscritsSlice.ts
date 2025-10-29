@@ -22,7 +22,8 @@ const piscineAliases = {
 /**
  * Piscines sans carte
  */
-const sansCarte = ['Piscine des Gratte Ciel']
+//
+const sansCarte = ['Piscine des Gratte Ciel'] // NOSONAR sonarqube(typescript:S7776)
 
 /**
  * Noms de groupes qui ne sont pas gérés programmatiquement
@@ -41,7 +42,7 @@ for (const gr of groupeSpecifiques) {
   groupeAliases[gr] = gr
 }
 
-const groupesAIgnorer = ['Promotionnel', 'Officiel']
+const groupesAIgnorer = ['Promotionnel', 'Officiel'] // NOSONAR sonarqube(typescript:S7776)
 
 /**
  * Représente une offre comiti, utilisé pour construire l'affichage d'un créneau
@@ -84,6 +85,7 @@ export interface InscritsState {
   offres: Offre[]
   selectedActivite: string | undefined
   selectedOffre: Offre | undefined
+  selectedInscritApres: string | undefined
   sortModel: SortModel
 }
 
@@ -319,10 +321,21 @@ export const stringOfOffre = (o: Offre) => {
  * Crée un filtre correspondant à une offre et une activité
  * @param offre offre sélectionnée
  * @param activite activité sélectionnée
+ * @param dateInscription  ne garde que les inscriptions postérieures à cette date
  * @returns un filtre qui ne garde que les inscrits correspondant à l'offre et à l'activité
  */
 export const inscritsFilter =
-  (offre: Offre | undefined, activite: string | undefined) => (inscrit: Inscrit) => {
+  (offre: Offre | undefined, activite: string | undefined, dateInscription: string | undefined) =>
+  (inscrit: Inscrit) => {
+    // Élimine les inscrit avant la date d'inscription si elle est fournie
+    if (
+      dateInscription !== undefined &&
+      inscrit.inscription !== undefined &&
+      inscrit.inscription < dateInscription
+    ) {
+      return false
+    }
+    // Filtre vis-à-vis de l'offre si possible ou, à défaut de l'activité
     if (offre) {
       return inscrit.offres[0].nOffre === offre.nOffre
     } else if (activite) {
@@ -332,32 +345,32 @@ export const inscritsFilter =
     }
   }
 
-  /**
-   * Produit un comparateur d'Inscrit sur la base du modèle de tri passé en argument.
-   * @param model le critère de tri
-   * @returns une fonction de comparaison d'inscrit pour trier un tableau d'inscrits
-   */
-  export const compareInscrit = (model: SortModel) => (a: Inscrit, b: Inscrit) => {
-    let cmp = 0
-    switch (model.field) {
-      case 'nComiti':
-        cmp = a.nComiti - b.nComiti
-        break;
-      case 'nom':
-        cmp = a.nom.localeCompare(b.nom)
-        break;
-      case 'offres':
-          cmp = compareOffre(a.offres[0],b.offres[0])
-          break;
-      default:
-        console.log(`Critère de tri inconnu: ${model.field}`)
-        break;
-    }
-    if (model.sort === 'desc') {
-      cmp = -cmp
-    }
-    return cmp
+/**
+ * Produit un comparateur d'Inscrit sur la base du modèle de tri passé en argument.
+ * @param model le critère de tri
+ * @returns une fonction de comparaison d'inscrit pour trier un tableau d'inscrits
+ */
+export const compareInscrit = (model: SortModel) => (a: Inscrit, b: Inscrit) => {
+  let cmp = 0
+  switch (model.field) {
+    case 'nComiti':
+      cmp = a.nComiti - b.nComiti
+      break
+    case 'nom':
+      cmp = a.nom.localeCompare(b.nom)
+      break
+    case 'offres':
+      cmp = compareOffre(a.offres[0], b.offres[0])
+      break
+    default:
+      console.log(`Critère de tri inconnu: ${model.field}`)
+      break
   }
+  if (model.sort === 'desc') {
+    cmp = -cmp
+  }
+  return cmp
+}
 
 export const defaultSortModel: SortModel = { field: 'nom', sort: 'asc' }
 
@@ -369,6 +382,7 @@ const initialState: InscritsState = {
   offres: [],
   selectedActivite: undefined,
   selectedOffre: undefined,
+  selectedInscritApres: undefined,
   sortModel: defaultSortModel
 }
 
@@ -396,6 +410,9 @@ export const inscritsSlice = createSlice({
         state.selectedActivite = state.selectedOffre.activite
       }
     },
+    inscritApresSelected: (state, action: PayloadAction<string | undefined>) => {
+      state.selectedInscritApres = action.payload
+    },
     sortModelChanged: (state, action: PayloadAction<SortModel>) => {
       state.sortModel = action.payload
       console.log(state.sortModel)
@@ -409,7 +426,8 @@ export const {
   inscritSelected,
   activiteSelected,
   offreSelected,
-  sortModelChanged
+  sortModelChanged,
+  inscritApresSelected
 } = inscritsSlice.actions
 
 // Export the slice reducer for use in the store configuration
@@ -426,3 +444,4 @@ export const selectSelectedActivite = (state: RootState) => state.inscrits.selec
 export const selectOffres = (state: RootState) => state.inscrits.offres
 export const selectSelectedOffre = (state: RootState) => state.inscrits.selectedOffre
 export const selectSortModel = (state: RootState) => state.inscrits.sortModel
+export const selectInscritApres = (state: RootState) => state.inscrits.selectedInscritApres

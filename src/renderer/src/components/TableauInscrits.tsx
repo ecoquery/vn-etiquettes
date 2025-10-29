@@ -1,5 +1,3 @@
-// TODO: Setup filters: date d'inscription, see #5
-
 import {
   DataGrid,
   GridCallbackDetails,
@@ -13,6 +11,7 @@ import {
   defaultSortModel,
   inscritSelected,
   inscritsFilter,
+  selectInscritApres,
   selectInscrits,
   selectSelected,
   selectSelectedActivite,
@@ -32,6 +31,7 @@ export const TableauInscrits = () => {
   const inscrits = useSelector(selectInscrits)
   const selectedInscrit = useSelector(selectSelected)
   const selectedActivite = useSelector(selectSelectedActivite)
+  const inscriptApres = useSelector(selectInscritApres)
   const selectedOffre = useSelector(selectSelectedOffre)
   const sortModel = useSelector(selectSortModel)
   const [paginationModel, setPaginationModel] = React.useState({
@@ -41,7 +41,7 @@ export const TableauInscrits = () => {
   const [userSelection, setUserSelection] = React.useState<number | undefined>(undefined)
 
   const data = Object.values(inscrits)
-    .filter(inscritsFilter(selectedOffre, selectedActivite))
+    .filter(inscritsFilter(selectedOffre, selectedActivite, inscriptApres))
     .toSorted(compareInscrit(sortModel))
     .map((x) => ({
       ...x,
@@ -95,22 +95,19 @@ export const TableauInscrits = () => {
   }
 
   return (
-    <>
-      <p>Le tableau ici</p>
-      <div style={{ height: 500, width: '100%' }}>
-        <DataGrid
-          apiRef={apiRef}
-          initialState={{ sorting: { sortModel: defaultSortModelInGrid } }}
-          columns={columns}
-          rows={data}
-          getRowId={(row) => row.nComiti}
-          rowSelectionModel={rowSelectionModel}
-          onRowSelectionModelChange={rowSelectionChanged}
-          onSortModelChange={sortModelUpdated}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-        />
-      </div>
-    </>
+    <div style={{ height: 500, width: '100%' }}>
+      <DataGrid
+        apiRef={apiRef}
+        initialState={{ sorting: { sortModel: defaultSortModelInGrid } }}
+        columns={columns}
+        rows={data}
+        getRowId={(row) => row.nComiti}
+        rowSelectionModel={rowSelectionModel}
+        onRowSelectionModelChange={rowSelectionChanged}
+        onSortModelChange={sortModelUpdated}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+      />
+    </div>
   )
 }
