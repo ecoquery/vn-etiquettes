@@ -5,12 +5,13 @@ import { useState } from 'react'
 import { Button, Checkbox, FormControlLabel, Paper, Stack, TextField } from '@mui/material'
 import { printAll, setSimulatePrint } from '@renderer/features/impression/impressionSlice'
 import { AppDispatch } from '@renderer/app/store'
+import { selectAnnee } from '@renderer/features/configuration/configurationSlice'
 
 export const GestionImpression = ({ dymo }) => {
   const dispatch: AppDispatch = useDispatch()
   const selectedInscrit = useSelector(selectSelected)
   const [nbPrint, setNbPrint] = useState(1)
-  const saison = '2025-2026'
+  const saison = useSelector(selectAnnee)
   return (
     <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <Paper>
