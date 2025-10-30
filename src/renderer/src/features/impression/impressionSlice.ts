@@ -4,8 +4,6 @@ import { genereLabelContent } from '../../app/Dymo'
 import { formatOffres } from '../../components/Etiquette'
 import { AppThunk, RootState } from '@renderer/app/store'
 
-const PRINT_DELAY = 2000
-
 /**
  * Imprime l'étiquette d'un inscrit
  * @param dymo le backend d'impression
@@ -37,7 +35,9 @@ const printQueue = (dymo, saison) => async (dispatch, getState: () => RootState)
       } else {
         await print(dymo, inscrit, saison)
       }
-      await new Promise((resolve) => setTimeout(() => resolve(1), PRINT_DELAY))
+      await new Promise((resolve) =>
+        setTimeout(() => resolve(1), getState().configuration.printDelay * 1000)
+      )
       dispatch(nextPrint())
       dispatch(
         inscritSelected(getState().impression.impressionQueue[getState().impression.idxImpression])

@@ -7,7 +7,9 @@ import {
   loadConfiguration,
   saveConfiguration,
   selectAnnee,
-  updateAnnee
+  selectPrintDelay,
+  updateAnnee,
+  updatePrintDelay
 } from '@renderer/features/configuration/configurationSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -39,6 +41,7 @@ const saveFileOptions = {
 export const ConfigurationPanel = () => {
   const dispatch: AppDispatch = useDispatch()
   const annee = useSelector(selectAnnee)
+  const printDelay = useSelector(selectPrintDelay)
   const emptyCfgFile = ''
   const handleImport = (event) => {
     if (event.target?.files[0]) {
@@ -79,12 +82,20 @@ export const ConfigurationPanel = () => {
             Exporter
           </Button>
         </Stack>
-        <Stack alignItems={'normal'}>
+        <Stack alignItems={'normal'} spacing={2}>
           <TextField
             label="Année"
             value={annee}
             onChange={(event) => {
               dispatch(updateAnnee(event.target.value))
+            }}
+          />
+          <TextField
+            label="Attente (en s) entre deux impressions"
+            type="number"
+            value={printDelay}
+            onChange={(event) => {
+              dispatch(updatePrintDelay(Number(event.target.value)))
             }}
           />
         </Stack>

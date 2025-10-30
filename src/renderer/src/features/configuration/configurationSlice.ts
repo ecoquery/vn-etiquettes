@@ -5,10 +5,12 @@ const configKey = 'configuration'
 
 export interface ConfigState {
   annee: string
+  printDelay: number
 }
 
 const initialState: ConfigState = {
-  annee: '2025-2026'
+  annee: '2025-2026',
+  printDelay: 2
 }
 
 export const configurationSlice = createSlice({
@@ -17,6 +19,9 @@ export const configurationSlice = createSlice({
   reducers: {
     updateAnnee: (state, action: PayloadAction<string>) => {
       state.annee = action.payload
+    },
+    updatePrintDelay: (state, action: PayloadAction<number>) => {
+      state.printDelay = action.payload
     },
     updateWholeConfiguration: (state, action: PayloadAction<ConfigState>) => {
       Object.assign(state, action.payload)
@@ -53,6 +58,7 @@ export const exportConfiguration =
     await writable.close()
   }
 
-export const { updateAnnee } = configurationSlice.actions
+export const { updateAnnee, updatePrintDelay } = configurationSlice.actions
 export default configurationSlice.reducer
 export const selectAnnee = (state: RootState) => state.configuration.annee
+export const selectPrintDelay = (state: RootState) => state.configuration.printDelay
