@@ -6,11 +6,13 @@ const configKey = 'configuration'
 export interface ConfigState {
   annee: string
   printDelay: number
+  simulatePrint: boolean
 }
 
 const initialState: ConfigState = {
   annee: '2025-2026',
-  printDelay: 2
+  printDelay: 2,
+  simulatePrint: true
 }
 
 export const configurationSlice = createSlice({
@@ -22,6 +24,9 @@ export const configurationSlice = createSlice({
     },
     updatePrintDelay: (state, action: PayloadAction<number>) => {
       state.printDelay = action.payload
+    },
+    updateSimulatePrint: (state, action: PayloadAction<boolean>) => {
+      state.simulatePrint = action.payload
     },
     updateWholeConfiguration: (state, action: PayloadAction<ConfigState>) => {
       Object.assign(state, action.payload)
@@ -58,7 +63,8 @@ export const exportConfiguration =
     await writable.close()
   }
 
-export const { updateAnnee, updatePrintDelay } = configurationSlice.actions
+export const { updateAnnee, updatePrintDelay, updateSimulatePrint } = configurationSlice.actions
 export default configurationSlice.reducer
 export const selectAnnee = (state: RootState) => state.configuration.annee
 export const selectPrintDelay = (state: RootState) => state.configuration.printDelay
+export const selectSimulatePrint = (state: RootState) => state.configuration.simulatePrint

@@ -1,4 +1,4 @@
-import { Button, Container, Stack, TextField } from '@mui/material'
+import { Button, Checkbox, Container, FormControlLabel, Stack, TextField } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { AppDispatch } from '@renderer/app/store'
 import {
@@ -8,8 +8,10 @@ import {
   saveConfiguration,
   selectAnnee,
   selectPrintDelay,
+  selectSimulatePrint,
   updateAnnee,
-  updatePrintDelay
+  updatePrintDelay,
+  updateSimulatePrint
 } from '@renderer/features/configuration/configurationSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -42,6 +44,7 @@ export const ConfigurationPanel = () => {
   const dispatch: AppDispatch = useDispatch()
   const annee = useSelector(selectAnnee)
   const printDelay = useSelector(selectPrintDelay)
+  const simulatePrint = useSelector(selectSimulatePrint)
   const emptyCfgFile = ''
   const handleImport = (event) => {
     if (event.target?.files[0]) {
@@ -97,6 +100,17 @@ export const ConfigurationPanel = () => {
             onChange={(event) => {
               dispatch(updatePrintDelay(Number(event.target.value)))
             }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                defaultChecked={simulatePrint}
+                onChange={(event) => {
+                  dispatch(updateSimulatePrint(event.target.checked))
+                }}
+              />
+            }
+            label="Simuler l'impression"
           />
         </Stack>
       </Stack>
