@@ -1,5 +1,61 @@
 {
   "annee": "2025-2026",
   "printDelay": 2,
-  "simulatePrint": true
+  "simulatePrint": true,
+  "aliasGroupes": {
+    "ADU-CSE-BPCESI": {
+      "ignore": false,
+      "replacement": "BPCESI"
+    },
+    "Dauphin bronze - DB2": {
+      "ignore": false,
+      "replacement": "DB2"
+    },
+    "Dauphin bronze - DB6": {
+      "ignore": false,
+      "replacement": "DB6"
+    },
+    "MAÎTRES": {
+      "ignore": false,
+      "replacement": "MAÎTRES"
+    },
+    "Seniors": {
+      "ignore": false,
+      "replacement": "Seniors"
+    },
+    "Avenirs": {
+      "ignore": false,
+      "replacement": "Avenirs"
+    },
+    "Juniors": {
+      "ignore": false,
+      "replacement": "Juniors"
+    },
+    "Benjamins": {
+      "ignore": false,
+      "replacement": "Benjamins"
+    },
+    "Promotionnel": {
+      "ignore": true,
+      "replacement": ""
+    },
+    "Officiel": {
+      "ignore": true,
+      "replacement": ""
+    }
+  },
+  "aliasPiscines": {
+    "Centre Nautique Etienne Gagnaire": {
+      "ignore": false,
+      "replacement": "CNEG"
+    },
+    "Piscine André Boulloche": {
+      "ignore": false,
+      "replacement": "Boulloche"
+    },
+    "Piscine des Gratte Ciel": {
+      "ignore": true,
+      "replacement": ""
+    }
+  }
 }

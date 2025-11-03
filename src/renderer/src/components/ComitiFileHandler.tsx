@@ -3,6 +3,7 @@ import { updateWithComitiData } from '../features/inscrits/inscritsSlice'
 import { CSSProperties } from 'react'
 import { useCSVReader } from 'react-papaparse'
 import { useDispatch } from 'react-redux'
+import { AppDispatch } from '@renderer/app/store'
 
 const styles = {
   csvReader: {
@@ -32,7 +33,7 @@ const styles = {
 }
 
 export const ComitiFileHandler = () => {
-  const dispatch = useDispatch()
+  const dispatch: AppDispatch = useDispatch()
   const { CSVReader } = useCSVReader()
 
   return (

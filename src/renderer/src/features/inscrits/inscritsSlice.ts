@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { RootState } from '../../app/store'
+import { AppDispatch, RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { ConfigState } from '../configuration/configurationSlice'
 
 const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
@@ -14,35 +15,35 @@ const cDateInscription = "Date d'inscription"
 /**
  * Noms alternatifs pour les piscines à placer sur les étiquettes
  */
-const piscineAliases = {
-  'Centre Nautique Etienne Gagnaire': 'CNEG',
-  'Piscine André Boulloche': 'Boulloche'
-}
+// const piscineAliases = {
+//   'Centre Nautique Etienne Gagnaire': 'CNEG',
+//   'Piscine André Boulloche': 'Boulloche'
+// }
 
 /**
  * Piscines sans carte
  */
 //
-const sansCarte = ['Piscine des Gratte Ciel'] // NOSONAR sonarqube(typescript:S7776)
+// const sansCarte = ['Piscine des Gratte Ciel'] // NOSONAR sonarqube(typescript:S7776)
 
 /**
  * Noms de groupes qui ne sont pas gérés programmatiquement
  */
-const groupeSpecifiques = ['MAÎTRES', 'Seniors', 'Avenirs', 'Juniors', 'Benjamins']
+// const groupeSpecifiques = ['MAÎTRES', 'Seniors', 'Avenirs', 'Juniors', 'Benjamins']
 
 /**
  * Gestion des groupes non gérés programmatiquement, à renommer
  */
-const groupeAliases = {
-  'ADU-CSE-BPCESI': 'BPCESI',
-  'Dauphin bronze - DB2': 'DB2',
-  'Dauphin bronze - DB6': 'DB6'
-}
-for (const gr of groupeSpecifiques) {
-  groupeAliases[gr] = gr
-}
+// const groupeAliases = {
+//   'ADU-CSE-BPCESI': 'BPCESI',
+//   'Dauphin bronze - DB2': 'DB2',
+//   'Dauphin bronze - DB6': 'DB6'
+// }
+// for (const gr of groupeSpecifiques) {
+//   groupeAliases[gr] = gr
+// }
 
-const groupesAIgnorer = ['Promotionnel', 'Officiel'] // NOSONAR sonarqube(typescript:S7776)
+// const groupesAIgnorer = ['Promotionnel', 'Officiel'] // NOSONAR sonarqube(typescript:S7776)
 
 /**
  * Représente une offre comiti, utilisé pour construire l'affichage d'un créneau
@@ -71,18 +72,27 @@ export interface Inscrit {
  * see https://mui.com/x/api/data-grid/data-grid/#data-grid-prop-sortingOrder
  */
 export interface SortModel {
-  field: string; sort: 'asc' | 'desc' | undefined | null
+  field: string
+  sort: 'asc' | 'desc' | undefined | null
+}
+
+/**
+ * Partie de l'état qui est calculée à partir des données comiti
+ */
+export interface ProcessedComitiData {
+  inscrits: Record<number, Inscrit>
+  activites: string[]
+  offres: Offre[]
+  piscines: string[]
+  categories: string[]
 }
 
 /**
  * Application internal state on comiti data
  */
-export interface InscritsState {
-  inscrits: Record<number, Inscrit>
+export interface InscritsState extends ProcessedComitiData {
   selected: Inscrit | undefined
-  status: 'idle' | 'loading' | 'failed'
-  activites: string[]
-  offres: Offre[]
+  // status: 'idle' | 'loading' | 'failed'
   selectedActivite: string | undefined
   selectedOffre: Offre | undefined
   selectedInscritApres: string | undefined
@@ -111,52 +121,68 @@ export function extractHoraire(data: string): string {
  * @param data le lieu et l'horaire issu de comiti
  * @returns la piscine dans laquelle l'activité a lieu
  */
-export function extractPiscine(data: string): string | undefined {
+export function extractPiscine(data: string, config: ConfigState): string | undefined {
   const matched = lieuHoraireParser.exec(data)
   if (matched) {
     const piscine = matched.groups?.piscine
     if (!piscine) {
-      console.error('Piscine not found in ', matched)
+      console.error('Piscine not found in ', matched) // TODO: Améliorer le retour utilisateur
       return undefined
     }
-    if (sansCarte.includes(piscine)) {
+    const alias = config.aliasPiscines[piscine]
+    if (alias?.ignore) {
       return undefined // pas de carte pour cette piscine
+    } else {
+      return alias?.replacement ?? piscine
     }
-    return piscineAliases[piscine ?? 'erreur'] ?? piscine
   } else {
     console.error(`Could not parse lieu horaire '${data}'`)
     return 'erreur'
   }
 }
 
+export function extractPiscineBrut(row: Record<string, string>): string | undefined {
+  const data = row[cLieuxHoraires].split(',')
+  for (const d of data) {
+    const matched = lieuHoraireParser.exec(d)
+    if (matched?.groups?.piscine) {
+      return matched?.groups?.piscine
+    }
+  }
+  return undefined
+}
+
 /**
  * Extrait un tableaux de lieux et horaires pour une offre
  * @param data la cellule lieux et horaires du fichier comiti
  */
-export function extractCreneaux(data: string): Array<{ lieu: string; heure: string }> {
+export function extractCreneaux(
+  data: string,
+  config: ConfigState
+): Array<{ lieu: string; heure: string }> {
   return data
     .split(',')
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
-    .map((s) => ({ lieu: extractPiscine(s) ?? '', heure: extractHoraire(s) }))
+    .map((s) => ({ lieu: extractPiscine(s, config) ?? '', heure: extractHoraire(s) }))
     .filter((c) => c.lieu !== '')
 }
 
 /**
- * Calcule le nom d'un groupe à afficher
- * @param {string} data le nom du groupe dans comiti
+ * Tente d'extraire un titre court à partir de schémas de nommages des titres longs.
+ * @param titreLong le titre duquel on extrait le titre court
  */
-export function extractTitreCourt(data: string): string | undefined {
+export function titreCourtCalcule(titreLong: string): string | undefined {
   /** essaie d'extraire un groupe à partir d'une regex */
   function t(re, repl?) {
-    const m = re.exec(data)
+    const m = re.exec(titreLong)
     if (m) {
       return repl ?? m[1]
     } else {
       return false
     }
   }
-  const shortName =
+  return (
     t(/Dauphin Bronze - (DB\d\d?)/) ||
     t(/Dauphin Argent - (DA\d\d?)/) ||
     t(/Dauphin Or - (DO\d\d?)/) ||
@@ -164,11 +190,22 @@ export function extractTitreCourt(data: string): string | undefined {
     t(/ADO - (A\d-\d) - 14-17 ans - Maitrise [13]-[24] nages/) ||
     t(/(ADU\d\d?).*/) ||
     t(/ADULTES DEBUTANTS.*/, 'ADUDEB') ||
-    groupeAliases[data]
+    undefined
+  )
+}
+
+/**
+ * Calcule le nom d'un groupe à afficher
+ * @param {string} data le nom du groupe dans comiti
+ */
+export function extractTitreCourt(data: string, config: ConfigState): string | undefined {
+  const shortName = titreCourtCalcule(data)
   if (shortName) {
     return shortName
-  } else if (groupesAIgnorer.includes(data)) {
+  } else if (config.aliasGroupes[data]?.ignore) {
     return undefined
+  } else if (config.aliasGroupes[data]) {
+    return config.aliasGroupes[data].replacement || data
   } else {
     console.error(`Failed to extract groupe from '${data}'`)
     return 'erreur'
@@ -180,12 +217,12 @@ export function extractTitreCourt(data: string): string | undefined {
  * @param row ligne comiti issue du fichier csv
  * @returns une offre
  */
-export function offreOfRow(row): Offre | undefined {
-  const titreCourt = extractTitreCourt(row[cCategorie])
+export function offreOfRow(row, config: ConfigState): Offre | undefined {
+  const titreCourt = extractTitreCourt(row[cCategorie], config)
   if (titreCourt === undefined) {
     return undefined // Pas de titre -> l'offre ne correspond pas à une carte (e.g. Officiel)
   }
-  const creneaux = extractCreneaux(row[cLieuxHoraires])
+  const creneaux = extractCreneaux(row[cLieuxHoraires], config)
   if (creneaux.length === 0) {
     return undefined // Pas de créneau (i.e. que des créneaux sans besoin de carte)
   }
@@ -261,50 +298,59 @@ export function compareOffre(o1: Offre, o2: Offre): number {
  * Mets à jour les informations des inscrits des données du fichier comiti
  * @param rows les lignes du fichier comiti
  */
-export function updateStateWithComitiData(
-  state: InscritsState,
-  rows: Array<Record<string, string>>
-) {
-  const inscrits: Record<number, Inscrit> = {}
-  const offres: Record<number, Offre> = {}
-  const activites: Set<string> = new Set()
-  for (const row of rows) {
-    if (row[cNumeroComiti] === '') {
-      continue // ligne vide
-    }
-    const numOffre = Number(row[cNumeroOffre])
-    if (!(numOffre in offres)) {
-      const offre = offreOfRow(row)
-      if (offre === undefined) {
-        continue // Cette offre ne donne pas lieu à être affichée sur une carte
-      } else {
-        offres[numOffre] = offre
-        activites.add(offre.activite)
+export const updateWithComitiData =
+  (rows: Array<Record<string, string>>) => (dispatch: AppDispatch, getState: () => RootState) => {
+    const inscrits: Record<number, Inscrit> = {}
+    const offres: Record<number, Offre> = {}
+    const activites: Set<string> = new Set()
+    const piscines: Set<string> = new Set()
+    const categoriesBrutes: Set<string> = new Set()
+    for (const row of rows) {
+      if (row[cNumeroComiti] === '') {
+        continue // ligne vide
+      }
+      const numOffre = Number(row[cNumeroOffre])
+      if (!(numOffre in offres)) {
+        const piscineBrut = extractPiscineBrut(row)
+        if (piscineBrut !== undefined) {
+          piscines.add(piscineBrut)
+        }
+        categoriesBrutes.add(row[cCategorie])
+        const offre = offreOfRow(row, getState().configuration)
+        if (offre === undefined) {
+          continue // Cette offre ne donne pas lieu à être affichée sur une carte
+        } else {
+          offres[numOffre] = offre
+          activites.add(offre.activite)
+        }
+      }
+      const numInscrit = Number(row[cNumeroComiti])
+      if (!(numInscrit in inscrits)) {
+        inscrits[numInscrit] = inscritOfRow(row)
+      }
+      const inscrit = inscrits[numInscrit]
+      inscrit.offres.push(offres[numOffre])
+      const insDate = parseDateInscription(row)
+      if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
+        inscrit.inscription = insDate
       }
     }
-    const numInscrit = Number(row[cNumeroComiti])
-    if (!(numInscrit in inscrits)) {
-      inscrits[numInscrit] = inscritOfRow(row)
-    }
-    const inscrit = inscrits[numInscrit]
-    inscrit.offres.push(offres[numOffre])
-    const insDate = parseDateInscription(row)
-    if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
-      inscrit.inscription = insDate
-    }
-  }
-  state.inscrits = inscrits
-  state.selected = undefined
-  state.activites = new Array(...activites.values()).toSorted(stringWithNumberCompare)
-  state.selectedActivite = undefined
-  state.offres = Object.values(offres).toSorted(compareOffre)
-  state.selectedOffre = undefined
 
-  // tri des offres pour chaque inscrit
-  for (const inscrit of Object.values(state.inscrits)) {
-    inscrit.offres.sort(compareOffre)
+    // tri des offres pour chaque inscrit
+    for (const inscrit of Object.values(inscrits)) {
+      inscrit.offres.sort(compareOffre)
+    }
+
+    dispatch(
+      updateFullInscritsState({
+        inscrits,
+        activites: new Array(...activites.values()).toSorted(stringWithNumberCompare),
+        offres: Object.values(offres).toSorted(compareOffre),
+        piscines: new Array(...piscines.values()),
+        categories: new Array(...categoriesBrutes.values())
+      })
+    )
   }
-}
 
 /**
  * Une string pour afficher une offre avec ses créneaux.
@@ -377,21 +423,26 @@ export const defaultSortModel: SortModel = { field: 'nom', sort: 'asc' }
 const initialState: InscritsState = {
   inscrits: {},
   selected: undefined,
-  status: 'idle',
   activites: [],
   offres: [],
   selectedActivite: undefined,
   selectedOffre: undefined,
   selectedInscritApres: undefined,
-  sortModel: defaultSortModel
+  sortModel: defaultSortModel,
+  piscines: [],
+  categories: []
 }
 
 export const inscritsSlice = createSlice({
   name: 'inscrits',
   initialState,
   reducers: {
-    updateWithComitiData: (state, action: PayloadAction<Array<Record<string, string>>>) => {
-      updateStateWithComitiData(state, action.payload)
+    updateFullInscritsState: (state, action: PayloadAction<ProcessedComitiData>) => {
+      Object.assign(state, action.payload)
+      state.selected = undefined
+      state.selectedActivite = undefined
+      state.selectedOffre = undefined
+      state.selectedInscritApres = undefined
     },
     inscritSelected: (state, action: PayloadAction<Inscrit | undefined>) => {
       state.selected = action.payload
@@ -422,7 +473,7 @@ export const inscritsSlice = createSlice({
 
 // Export the generated action creators for use in components
 export const {
-  updateWithComitiData,
+  updateFullInscritsState,
   inscritSelected,
   activiteSelected,
   offreSelected,
@@ -438,10 +489,11 @@ export default inscritsSlice.reducer
 // in a component, or inside the `createSlice.selectors` field.
 export const selectInscrits = (state: RootState) => state.inscrits.inscrits
 export const selectSelected = (state: RootState) => state.inscrits.selected
-export const selectStatus = (state: RootState) => state.inscrits.status
 export const selectActivites = (state: RootState) => state.inscrits.activites
 export const selectSelectedActivite = (state: RootState) => state.inscrits.selectedActivite
 export const selectOffres = (state: RootState) => state.inscrits.offres
 export const selectSelectedOffre = (state: RootState) => state.inscrits.selectedOffre
 export const selectSortModel = (state: RootState) => state.inscrits.sortModel
 export const selectInscritApres = (state: RootState) => state.inscrits.selectedInscritApres
+export const selectPiscines = (state: RootState) => state.inscrits.piscines
+export const selectCategories = (state: RootState) => state.inscrits.categories

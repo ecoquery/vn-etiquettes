@@ -13,6 +13,7 @@ import {
   updatePrintDelay,
   updateSimulatePrint
 } from '@renderer/features/configuration/configurationSlice'
+import { selectCategories, selectPiscines } from '@renderer/features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
 
 // From https://mui.com/material-ui/react-button/#file-upload
@@ -45,6 +46,8 @@ export const ConfigurationPanel = () => {
   const annee = useSelector(selectAnnee)
   const printDelay = useSelector(selectPrintDelay)
   const simulatePrint = useSelector(selectSimulatePrint)
+  const piscines = useSelector(selectPiscines)
+  const categories = useSelector(selectCategories)
   const emptyCfgFile = ''
   const handleImport = (event) => {
     if (event.target?.files[0]) {
@@ -113,6 +116,8 @@ export const ConfigurationPanel = () => {
             label="Simuler l'impression"
           />
         </Stack>
+        <p>Piscines: {piscines.join(', ')}</p>
+        <p>Catégories: {categories.join(', ')}</p>
       </Stack>
     </Container>
   )
