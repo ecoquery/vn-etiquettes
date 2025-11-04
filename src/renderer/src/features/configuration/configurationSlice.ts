@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { AppThunk, RootState } from '@renderer/app/store'
+import { rebuildComitiDerivedData } from '../inscrits/inscritsSlice'
 
 const configKey = 'configuration'
 
@@ -113,13 +114,21 @@ export const exportConfiguration =
     await writable.close()
   }
 
-export const {
-  updateAnnee,
-  updatePrintDelay,
-  updateSimulatePrint,
-  updateAliasPiscine,
-  updateAliasGroupe
-} = configurationSlice.actions
+export const updateAliasPiscine =
+  (nameAlias: NameAlias): AppThunk =>
+  (dispatch, _getState) => {
+    dispatch(configurationSlice.actions.updateAliasPiscine(nameAlias))
+    dispatch(rebuildComitiDerivedData)
+  }
+
+export const updateAliasGroupe =
+  (nameAlias: NameAlias): AppThunk =>
+  (dispatch, _getState) => {
+    dispatch(configurationSlice.actions.updateAliasGroupe(nameAlias))
+    dispatch(rebuildComitiDerivedData)
+  }
+
+export const { updateAnnee, updatePrintDelay, updateSimulatePrint } = configurationSlice.actions
 export default configurationSlice.reducer
 export const selectAnnee = (state: RootState) => state.configuration.annee
 export const selectPrintDelay = (state: RootState) => state.configuration.printDelay

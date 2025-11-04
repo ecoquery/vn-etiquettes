@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { AppDispatch, RootState } from '../../app/store'
+import { AppDispatch, AppThunk, RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { ConfigState, updateAliasPiscine } from '../configuration/configurationSlice'
 
@@ -63,6 +63,7 @@ export interface InscritsState extends ProcessedComitiData {
   selectedOffre: Offre | undefined
   selectedInscritApres: string | undefined
   sortModel: SortModel
+  rawData: Array<Record<string, string>>
 }
 
 /** regex used to parse lieux et horaires */
@@ -260,64 +261,79 @@ export function compareOffre(o1: Offre, o2: Offre): number {
   return stringWithNumberCompare(o1.titreCourt, o2.titreCourt)
 }
 
+export const buildDerivedData = (
+  rows: Record<string, string>[],
+  config: ConfigState
+): ProcessedComitiData => {
+  const inscrits: Record<number, Inscrit> = {}
+  const offres: Record<number, Offre> = {}
+  const activites: Set<string> = new Set()
+  const piscines: Set<string> = new Set()
+  const categoriesBrutes: Set<string> = new Set()
+  for (const row of rows) {
+    if (row[cNumeroComiti] === '') {
+      continue // ligne vide
+    }
+    const numOffre = Number(row[cNumeroOffre])
+    if (!(numOffre in offres)) {
+      const piscineBrut = extractPiscineBrut(row)
+      if (piscineBrut !== undefined) {
+        piscines.add(piscineBrut)
+      }
+      categoriesBrutes.add(row[cCategorie])
+      const offre = offreOfRow(row, config)
+      if (offre === undefined) {
+        continue // Cette offre ne donne pas lieu à être affichée sur une carte
+      } else {
+        offres[numOffre] = offre
+        activites.add(offre.activite)
+      }
+    }
+    const numInscrit = Number(row[cNumeroComiti])
+    if (!(numInscrit in inscrits)) {
+      inscrits[numInscrit] = inscritOfRow(row)
+    }
+    const inscrit = inscrits[numInscrit]
+    inscrit.offres.push(offres[numOffre])
+    const insDate = parseDateInscription(row)
+    if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
+      inscrit.inscription = insDate
+    }
+  }
+
+  // tri des offres pour chaque inscrit
+  for (const inscrit of Object.values(inscrits)) {
+    inscrit.offres.sort(compareOffre)
+  }
+
+  return {
+    inscrits,
+    activites: new Array(...activites.values()).toSorted(stringWithNumberCompare),
+    offres: Object.values(offres).toSorted(compareOffre),
+    piscines: new Array(...piscines.values()),
+    categories: new Array(...categoriesBrutes.values())
+  }
+}
+
+export const rebuildComitiDerivedData: AppThunk = (dispatch, getState) => {
+  const processedComitiData = buildDerivedData(
+    getState().inscrits.rawData,
+    getState().configuration
+  )
+
+  dispatch(inscritsSlice.actions.updateFullInscritsState(processedComitiData))
+}
+
 /**
  * Mets à jour les informations des inscrits des données du fichier comiti
  * @param rows les lignes du fichier comiti
  */
 export const updateWithComitiData =
   (rows: Array<Record<string, string>>) => (dispatch: AppDispatch, getState: () => RootState) => {
-    const inscrits: Record<number, Inscrit> = {}
-    const offres: Record<number, Offre> = {}
-    const activites: Set<string> = new Set()
-    const piscines: Set<string> = new Set()
-    const categoriesBrutes: Set<string> = new Set()
-    for (const row of rows) {
-      if (row[cNumeroComiti] === '') {
-        continue // ligne vide
-      }
-      const numOffre = Number(row[cNumeroOffre])
-      if (!(numOffre in offres)) {
-        const piscineBrut = extractPiscineBrut(row)
-        if (piscineBrut !== undefined) {
-          piscines.add(piscineBrut)
-        }
-        categoriesBrutes.add(row[cCategorie])
-        const offre = offreOfRow(row, getState().configuration)
-        if (offre === undefined) {
-          continue // Cette offre ne donne pas lieu à être affichée sur une carte
-        } else {
-          offres[numOffre] = offre
-          activites.add(offre.activite)
-        }
-      }
-      const numInscrit = Number(row[cNumeroComiti])
-      if (!(numInscrit in inscrits)) {
-        inscrits[numInscrit] = inscritOfRow(row)
-      }
-      const inscrit = inscrits[numInscrit]
-      inscrit.offres.push(offres[numOffre])
-      const insDate = parseDateInscription(row)
-      if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
-        inscrit.inscription = insDate
-      }
-    }
+    dispatch(inscritsSlice.actions.rawDataChanged(rows))
+    dispatch(rebuildComitiDerivedData)
 
-    // tri des offres pour chaque inscrit
-    for (const inscrit of Object.values(inscrits)) {
-      inscrit.offres.sort(compareOffre)
-    }
-
-    dispatch(
-      updateFullInscritsState({
-        inscrits,
-        activites: new Array(...activites.values()).toSorted(stringWithNumberCompare),
-        offres: Object.values(offres).toSorted(compareOffre),
-        piscines: new Array(...piscines.values()),
-        categories: new Array(...categoriesBrutes.values())
-      })
-    )
-
-    for (const p of piscines.values()) {
+    for (const p of getState().inscrits.piscines.values()) {
       if (getState().configuration.aliasPiscines[p] === undefined) {
         dispatch(updateAliasPiscine({ name: p, alias: { ignore: false, replacement: p } }))
       }
@@ -402,7 +418,8 @@ const initialState: InscritsState = {
   selectedInscritApres: undefined,
   sortModel: defaultSortModel,
   piscines: [],
-  categories: []
+  categories: [],
+  rawData: []
 }
 
 export const inscritsSlice = createSlice({
@@ -439,13 +456,15 @@ export const inscritsSlice = createSlice({
     sortModelChanged: (state, action: PayloadAction<SortModel>) => {
       state.sortModel = action.payload
       console.log(state.sortModel)
+    },
+    rawDataChanged: (state, action: PayloadAction<Record<string, string>[]>) => {
+      state.rawData = action.payload
     }
   }
 })
 
 // Export the generated action creators for use in components
 export const {
-  updateFullInscritsState,
   inscritSelected,
   activiteSelected,
   offreSelected,
