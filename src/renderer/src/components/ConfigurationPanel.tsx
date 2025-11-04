@@ -13,6 +13,7 @@ import {
 import { styled } from '@mui/material/styles'
 import { AppDispatch } from '@renderer/app/store'
 import {
+  defaultHeadersComiti,
   exportConfiguration,
   importConfiguration,
   loadConfiguration,
@@ -20,11 +21,13 @@ import {
   selectAliasGroupes,
   selectAliasPiscines,
   selectAnnee,
+  selectHeadersComiti,
   selectPrintDelay,
   selectSimulatePrint,
   updateAliasGroupe,
   updateAliasPiscine,
   updateAnnee,
+  updateHeader,
   updatePrintDelay,
   updateSimulatePrint
 } from '@renderer/features/configuration/configurationSlice'
@@ -70,6 +73,7 @@ export const ConfigurationPanel = () => {
   const aliasPiscines = useSelector(selectAliasPiscines)
   const aliasGroupes = useSelector(selectAliasGroupes)
   const groupes = useSelector(selectCategories)
+  const headersComiti = useSelector(selectHeadersComiti)
   const [inclureGroupeAuto, setInclureGroupeAuto] = useState(false)
   const groupesAjoutables = groupes.filter(
     (gr) =>
@@ -125,6 +129,9 @@ export const ConfigurationPanel = () => {
         spacing={2}
         style={{ maxHeight: 600, overflow: 'scroll', marginTop: 20 }}
       >
+        {/*
+        Section général
+        */}
         <Typography variant="h5">Général</Typography>
         <Stack alignItems={'normal'} spacing={2}>
           <TextField
@@ -154,6 +161,10 @@ export const ConfigurationPanel = () => {
             label="Simuler l'impression"
           />
         </Stack>
+
+        {/*
+        Section piscines
+        */}
         <Typography variant="h5">Piscines</Typography>
         <List>
           {Object.keys(aliasPiscines).map((p) => (
@@ -168,6 +179,10 @@ export const ConfigurationPanel = () => {
             </ListItem>
           ))}
         </List>
+
+        {/*
+        Section groupes
+         */}
         <Typography variant="h5">Groupes</Typography>
         <List>
           {Object.keys(aliasGroupes).map((g) => (
@@ -226,6 +241,24 @@ export const ConfigurationPanel = () => {
           }
           label="Voir les groupes gérés automatiquement"
         />
+
+        {/*
+          Section entêtes
+          */}
+        <Typography variant="h5">Entêtes</Typography>
+        <List>
+          {Object.keys(headersComiti).map((h) => (
+            <ListItem key={h}>
+              <TextField
+                label={defaultHeadersComiti[h]}
+                value={headersComiti[h]}
+                onChange={(event) => {
+                  dispatch(updateHeader(h, event.target.value))
+                }}
+              />
+            </ListItem>
+          ))}
+        </List>
       </Stack>
     </Container>
   )

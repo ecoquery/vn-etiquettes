@@ -3,14 +3,14 @@ import { AppDispatch, AppThunk, RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { ConfigState, updateAliasPiscine } from '../configuration/configurationSlice'
 
-const cNumeroOffre = 'Numéro offre'
-const cCategorie = 'Catégorie'
-const cLieuxHoraires = 'Lieux et horaires'
-const cActivite = 'Nom spécifique activité'
-const cNumeroComiti = 'Numéro Comiti'
-const cNom = 'Nom'
-const cPrenom = 'Prénom'
-const cDateInscription = "Date d'inscription"
+// const cNumeroOffre = 'Numéro offre'
+// const cCategorie = 'Catégorie'
+// const cLieuxHoraires = 'Lieux et horaires'
+// const cActivite = 'Nom spécifique activité'
+// const cNumeroComiti = 'Numéro Comiti'
+// const cNom = 'Nom'
+// const cPrenom = 'Prénom'
+// const cDateInscription = "Date d'inscription"
 
 /**
  * Représente une offre comiti, utilisé pour construire l'affichage d'un créneau
@@ -108,7 +108,11 @@ export function extractPiscine(data: string, config: ConfigState): string | unde
   }
 }
 
-export function extractPiscineBrut(row: Record<string, string>): string | undefined {
+export function extractPiscineBrut(
+  row: Record<string, string>,
+  config: ConfigState
+): string | undefined {
+  const { cLieuxHoraires } = config.headersComiti
   const data = row[cLieuxHoraires].split(',')
   for (const d of data) {
     const matched = lieuHoraireParser.exec(d)
@@ -185,6 +189,7 @@ export function extractTitreCourt(data: string, config: ConfigState): string | u
  * @returns une offre
  */
 export function offreOfRow(row, config: ConfigState): Offre | undefined {
+  const { cCategorie, cActivite, cLieuxHoraires, cNumeroOffre } = config.headersComiti
   const titreCourt = extractTitreCourt(row[cCategorie], config)
   if (titreCourt === undefined) {
     return undefined // Pas de titre -> l'offre ne correspond pas à une carte (e.g. Officiel)
@@ -207,7 +212,8 @@ export function offreOfRow(row, config: ConfigState): Offre | undefined {
  * @param row la ligne issue du fichier csv comiti
  * @returns un inscrit, sans l'offre associée
  */
-export function inscritOfRow(row): Inscrit {
+export function inscritOfRow(row, config: ConfigState): Inscrit {
+  const { cNumeroComiti, cNom, cPrenom } = config.headersComiti
   return { nComiti: Number(row[cNumeroComiti]), nom: `${row[cNom]} ${row[cPrenom]}`, offres: [] }
 }
 
@@ -216,7 +222,8 @@ export function inscritOfRow(row): Inscrit {
  * @param row la ligne comiti
  * @returns la date d'inscription de la ligne comiti
  */
-export function parseDateInscription(row: Record<string, string>): string {
+export function parseDateInscription(row: Record<string, string>, config: ConfigState): string {
+  const { cDateInscription } = config.headersComiti
   const sValue: string = row[cDateInscription]
   const [jour, mois, annee] = sValue.split('-')
   return new Date(`${annee}-${mois}-${jour}`).toISOString()
@@ -270,13 +277,14 @@ export const buildDerivedData = (
   const activites: Set<string> = new Set()
   const piscines: Set<string> = new Set()
   const categoriesBrutes: Set<string> = new Set()
+  const { cNumeroComiti, cNumeroOffre, cCategorie } = config.headersComiti
   for (const row of rows) {
     if (row[cNumeroComiti] === '') {
       continue // ligne vide
     }
     const numOffre = Number(row[cNumeroOffre])
     if (!(numOffre in offres)) {
-      const piscineBrut = extractPiscineBrut(row)
+      const piscineBrut = extractPiscineBrut(row, config)
       if (piscineBrut !== undefined) {
         piscines.add(piscineBrut)
       }
@@ -291,11 +299,11 @@ export const buildDerivedData = (
     }
     const numInscrit = Number(row[cNumeroComiti])
     if (!(numInscrit in inscrits)) {
-      inscrits[numInscrit] = inscritOfRow(row)
+      inscrits[numInscrit] = inscritOfRow(row, config)
     }
     const inscrit = inscrits[numInscrit]
     inscrit.offres.push(offres[numOffre])
-    const insDate = parseDateInscription(row)
+    const insDate = parseDateInscription(row, config)
     if (inscrit.inscription === undefined || inscrit.inscription < insDate) {
       inscrit.inscription = insDate
     }

@@ -17,12 +17,35 @@ export interface NameAlias {
   alias: Alias | undefined
 }
 
+export interface HeadersComiti {
+  cNumeroOffre: string
+  cCategorie: string
+  cLieuxHoraires: string
+  cActivite: string
+  cNumeroComiti: string
+  cNom: string
+  cPrenom: string
+  cDateInscription: string
+}
+
+export const defaultHeadersComiti: HeadersComiti = {
+  cNumeroOffre: 'Numéro offre',
+  cCategorie: 'Catégorie',
+  cLieuxHoraires: 'Lieux et horaires',
+  cActivite: 'Nom spécifique activité',
+  cNumeroComiti: 'Numéro Comiti',
+  cNom: 'Nom',
+  cPrenom: 'Prénom',
+  cDateInscription: "Date d'inscription"
+}
+
 export interface ConfigState {
   annee: string
   printDelay: number
   simulatePrint: boolean
   aliasGroupes: Record<string, Alias>
   aliasPiscines: Record<string, Alias>
+  headersComiti: HeadersComiti
 }
 
 const aIgnore = () => ({ ignore: true, replacement: '' })
@@ -49,7 +72,8 @@ const initialState: ConfigState = {
     'Piscine André Boulloche': aReplace('Boulloche'),
     'Piscine des Gratte Ciel': aIgnore(),
     Compétition: aReplace('Compétition')
-  }
+  },
+  headersComiti: { ...defaultHeadersComiti }
 }
 
 export const configurationSlice = createSlice({
@@ -80,6 +104,13 @@ export const configurationSlice = createSlice({
         delete state.aliasGroupes[action.payload.name]
       } else {
         state.aliasGroupes[action.payload.name] = action.payload.alias
+      }
+    },
+    updateHeader: (state, action: PayloadAction<{ header: string; value: string }>) => {
+      if (Object.keys(state.headersComiti).includes(action.payload.header)) {
+        state.headersComiti[action.payload.header] = action.payload.value
+      } else {
+        console.error(`Unknown header in updateHeader: ${action.payload.header}`)
       }
     }
   }
@@ -128,6 +159,13 @@ export const updateAliasGroupe =
     dispatch(rebuildComitiDerivedData)
   }
 
+export const updateHeader =
+  (header: string, value: string): AppThunk =>
+  (dispatch, _getState) => {
+    dispatch(configurationSlice.actions.updateHeader({ header, value }))
+    dispatch(rebuildComitiDerivedData)
+  }
+
 export const { updateAnnee, updatePrintDelay, updateSimulatePrint } = configurationSlice.actions
 export default configurationSlice.reducer
 export const selectAnnee = (state: RootState) => state.configuration.annee
@@ -135,3 +173,4 @@ export const selectPrintDelay = (state: RootState) => state.configuration.printD
 export const selectSimulatePrint = (state: RootState) => state.configuration.simulatePrint
 export const selectAliasGroupes = (state: RootState) => state.configuration.aliasGroupes
 export const selectAliasPiscines = (state: RootState) => state.configuration.aliasPiscines
+export const selectHeadersComiti = (state: RootState) => state.configuration.headersComiti

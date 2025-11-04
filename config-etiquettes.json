@@ -61,5 +61,15 @@
       "ignore": false,
       "replacement": "Compétition"
     }
+  },
+  "headersComiti": {
+    "cNumeroOffre": "Numéro offre",
+    "cCategorie": "Catégorie",
+    "cLieuxHoraires": "Lieux et horaires",
+    "cActivite": "Nom spécifique activité",
+    "cNumeroComiti": "Numéro Comiti",
+    "cNom": "Nom",
+    "cPrenom": "Prénom",
+    "cDateInscription": "Date d'inscription"
   }
 }
