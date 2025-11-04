@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { AppDispatch, RootState } from '../../app/store'
 import type { PayloadAction } from '@reduxjs/toolkit'
-import { ConfigState } from '../configuration/configurationSlice'
+import { ConfigState, updateAliasPiscine } from '../configuration/configurationSlice'
 
 const cNumeroOffre = 'Numéro offre'
 const cCategorie = 'Catégorie'
@@ -11,39 +11,6 @@ const cNumeroComiti = 'Numéro Comiti'
 const cNom = 'Nom'
 const cPrenom = 'Prénom'
 const cDateInscription = "Date d'inscription"
-
-/**
- * Noms alternatifs pour les piscines à placer sur les étiquettes
- */
-// const piscineAliases = {
-//   'Centre Nautique Etienne Gagnaire': 'CNEG',
-//   'Piscine André Boulloche': 'Boulloche'
-// }
-
-/**
- * Piscines sans carte
- */
-//
-// const sansCarte = ['Piscine des Gratte Ciel'] // NOSONAR sonarqube(typescript:S7776)
-
-/**
- * Noms de groupes qui ne sont pas gérés programmatiquement
- */
-// const groupeSpecifiques = ['MAÎTRES', 'Seniors', 'Avenirs', 'Juniors', 'Benjamins']
-
-/**
- * Gestion des groupes non gérés programmatiquement, à renommer
- */
-// const groupeAliases = {
-//   'ADU-CSE-BPCESI': 'BPCESI',
-//   'Dauphin bronze - DB2': 'DB2',
-//   'Dauphin bronze - DB6': 'DB6'
-// }
-// for (const gr of groupeSpecifiques) {
-//   groupeAliases[gr] = gr
-// }
-
-// const groupesAIgnorer = ['Promotionnel', 'Officiel'] // NOSONAR sonarqube(typescript:S7776)
 
 /**
  * Représente une offre comiti, utilisé pour construire l'affichage d'un créneau
@@ -92,7 +59,6 @@ export interface ProcessedComitiData {
  */
 export interface InscritsState extends ProcessedComitiData {
   selected: Inscrit | undefined
-  // status: 'idle' | 'loading' | 'failed'
   selectedActivite: string | undefined
   selectedOffre: Offre | undefined
   selectedInscritApres: string | undefined
@@ -350,6 +316,12 @@ export const updateWithComitiData =
         categories: new Array(...categoriesBrutes.values())
       })
     )
+
+    for (const p of piscines.values()) {
+      if (getState().configuration.aliasPiscines[p] === undefined) {
+        dispatch(updateAliasPiscine({ name: p, alias: { ignore: false, replacement: p } }))
+      }
+    }
   }
 
 /**

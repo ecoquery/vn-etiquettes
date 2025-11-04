@@ -1,4 +1,15 @@
-import { Button, Checkbox, Container, FormControlLabel, Stack, TextField } from '@mui/material'
+import {
+  Autocomplete,
+  Button,
+  Checkbox,
+  Container,
+  FormControlLabel,
+  List,
+  ListItem,
+  Stack,
+  TextField,
+  Typography
+} from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { AppDispatch } from '@renderer/app/store'
 import {
@@ -6,15 +17,25 @@ import {
   importConfiguration,
   loadConfiguration,
   saveConfiguration,
+  selectAliasGroupes,
+  selectAliasPiscines,
   selectAnnee,
   selectPrintDelay,
   selectSimulatePrint,
+  updateAliasGroupe,
+  updateAliasPiscine,
   updateAnnee,
   updatePrintDelay,
   updateSimulatePrint
 } from '@renderer/features/configuration/configurationSlice'
-import { selectCategories, selectPiscines } from '@renderer/features/inscrits/inscritsSlice'
+import {
+  selectCategories,
+  selectPiscines,
+  titreCourtCalcule
+} from '@renderer/features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
+import { AliasEditor } from './AliasEditor'
+import { useState } from 'react'
 
 // From https://mui.com/material-ui/react-button/#file-upload
 const VisuallyHiddenInput = styled('input')({
@@ -46,9 +67,17 @@ export const ConfigurationPanel = () => {
   const annee = useSelector(selectAnnee)
   const printDelay = useSelector(selectPrintDelay)
   const simulatePrint = useSelector(selectSimulatePrint)
-  const piscines = useSelector(selectPiscines)
-  const categories = useSelector(selectCategories)
+  const aliasPiscines = useSelector(selectAliasPiscines)
+  const aliasGroupes = useSelector(selectAliasGroupes)
+  const groupes = useSelector(selectCategories)
+  const [inclureGroupeAuto, setInclureGroupeAuto] = useState(false)
+  const groupesAjoutables = groupes.filter(
+    (gr) =>
+      (inclureGroupeAuto || titreCourtCalcule(gr) === undefined) && aliasGroupes[gr] === undefined
+  )
   const emptyCfgFile = ''
+  const [groupeAAjouter, setGroupeAAjouter] = useState<string | null>(null)
+
   const handleImport = (event) => {
     if (event.target?.files[0]) {
       dispatch(importConfiguration(event.target.files[0]))
@@ -56,13 +85,15 @@ export const ConfigurationPanel = () => {
       console.error("Pas de fichier pour l'import")
     }
   }
+
   const handleExport = async () => {
     const fileHandle = await globalThis.showSaveFilePicker(saveFileOptions)
     dispatch(exportConfiguration(fileHandle))
   }
+
   return (
     <Container>
-      <Stack alignItems={'center'} spacing={2}>
+      <Stack alignItems="center" spacing={2}>
         <Stack direction={'row'} spacing={2}>
           <Button
             variant="contained"
@@ -88,6 +119,13 @@ export const ConfigurationPanel = () => {
             Exporter
           </Button>
         </Stack>
+      </Stack>
+      <Stack
+        alignItems={'center'}
+        spacing={2}
+        style={{ maxHeight: 600, overflow: 'scroll', marginTop: 20 }}
+      >
+        <Typography variant="h5">Général</Typography>
         <Stack alignItems={'normal'} spacing={2}>
           <TextField
             label="Année"
@@ -116,8 +154,78 @@ export const ConfigurationPanel = () => {
             label="Simuler l'impression"
           />
         </Stack>
-        <p>Piscines: {piscines.join(', ')}</p>
-        <p>Catégories: {categories.join(', ')}</p>
+        <Typography variant="h5">Piscines</Typography>
+        <List>
+          {Object.keys(aliasPiscines).map((p) => (
+            <ListItem key={p}>
+              <AliasEditor
+                name={p}
+                value={aliasPiscines[p]}
+                onChange={(name, alias) => {
+                  dispatch(updateAliasPiscine({ name, alias }))
+                }}
+              />
+            </ListItem>
+          ))}
+        </List>
+        <Typography variant="h5">Groupes</Typography>
+        <List>
+          {Object.keys(aliasGroupes).map((g) => (
+            <ListItem key={g}>
+              <AliasEditor
+                name={g}
+                value={aliasGroupes[g]}
+                onChange={(name, alias) => {
+                  dispatch(updateAliasGroupe({ name, alias }))
+                }}
+                deletable
+              />
+            </ListItem>
+          ))}
+        </List>
+        {groupesAjoutables.length > 0 ? (
+          <Stack direction="row" spacing={2}>
+            <Autocomplete
+              disablePortal
+              options={groupesAjoutables}
+              sx={{ width: 300 }}
+              value={groupeAAjouter}
+              onChange={(_event, value) => {
+                setGroupeAAjouter(value)
+              }}
+              renderInput={(params) => <TextField {...params} label="Groupe" />}
+            />
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (groupeAAjouter) {
+                  dispatch(
+                    updateAliasGroupe({
+                      name: groupeAAjouter,
+                      alias: { ignore: true, replacement: '' }
+                    })
+                  )
+                  setGroupeAAjouter('')
+                }
+              }}
+            >
+              Ajouter
+            </Button>
+          </Stack>
+        ) : (
+          ''
+        )}
+        <FormControlLabel
+          control={
+            <Checkbox
+              value={inclureGroupeAuto}
+              onChange={(_event, checked) => {
+                setInclureGroupeAuto(checked)
+              }}
+            />
+          }
+          label="Voir les groupes gérés automatiquement"
+        />
       </Stack>
     </Container>
   )

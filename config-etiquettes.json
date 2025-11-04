@@ -31,10 +31,6 @@
       "ignore": false,
       "replacement": "Juniors"
     },
-    "Benjamins": {
-      "ignore": false,
-      "replacement": "Benjamins"
-    },
     "Promotionnel": {
       "ignore": true,
       "replacement": ""
@@ -42,6 +38,10 @@
     "Officiel": {
       "ignore": true,
       "replacement": ""
+    },
+    "Benjamins": {
+      "ignore": false,
+      "replacement": "Benjamins"
     }
   },
   "aliasPiscines": {
@@ -56,6 +56,10 @@
     "Piscine des Gratte Ciel": {
       "ignore": true,
       "replacement": ""
+    },
+    "Compétition": {
+      "ignore": false,
+      "replacement": "Compétition"
     }
   }
 }

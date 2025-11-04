@@ -11,6 +11,11 @@ export interface Alias {
   replacement: string
 }
 
+export interface NameAlias {
+  name: string
+  alias: Alias | undefined
+}
+
 export interface ConfigState {
   annee: string
   printDelay: number
@@ -61,6 +66,20 @@ export const configurationSlice = createSlice({
     },
     updateWholeConfiguration: (state, action: PayloadAction<ConfigState>) => {
       Object.assign(state, action.payload)
+    },
+    updateAliasPiscine: (state, action: PayloadAction<NameAlias>) => {
+      if (action.payload.alias === undefined) {
+        delete state.aliasPiscines[action.payload.name]
+      } else {
+        state.aliasPiscines[action.payload.name] = action.payload.alias
+      }
+    },
+    updateAliasGroupe: (state, action: PayloadAction<NameAlias>) => {
+      if (action.payload.alias === undefined) {
+        delete state.aliasGroupes[action.payload.name]
+      } else {
+        state.aliasGroupes[action.payload.name] = action.payload.alias
+      }
     }
   }
 })
@@ -94,7 +113,13 @@ export const exportConfiguration =
     await writable.close()
   }
 
-export const { updateAnnee, updatePrintDelay, updateSimulatePrint } = configurationSlice.actions
+export const {
+  updateAnnee,
+  updatePrintDelay,
+  updateSimulatePrint,
+  updateAliasPiscine,
+  updateAliasGroupe
+} = configurationSlice.actions
 export default configurationSlice.reducer
 export const selectAnnee = (state: RootState) => state.configuration.annee
 export const selectPrintDelay = (state: RootState) => state.configuration.printDelay
