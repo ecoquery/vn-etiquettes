@@ -4,8 +4,6 @@ import { genereLabelContent } from '../../app/Dymo'
 import { formatOffres } from '../../components/Etiquette'
 import { AppThunk, RootState } from '@renderer/app/store'
 
-const PRINT_DELAY = 2000
-
 /**
  * Imprime l'étiquette d'un inscrit
  * @param dymo le backend d'impression
@@ -32,12 +30,14 @@ const printQueue = (dymo, saison) => async (dispatch, getState: () => RootState)
     const inscrit = getState().impression.impressionQueue[getState().impression.idxImpression]
     if (inscrit !== undefined) {
       dispatch(inscritSelected(inscrit))
-      if (getState().impression.simulatePrint) {
+      if (getState().configuration.simulatePrint) {
         console.log(`Simule l'impression de `, inscrit)
       } else {
         await print(dymo, inscrit, saison)
       }
-      await new Promise((resolve) => setTimeout(() => resolve(1), PRINT_DELAY))
+      await new Promise((resolve) =>
+        setTimeout(() => resolve(1), getState().configuration.printDelay * 1000)
+      )
       dispatch(nextPrint())
       dispatch(
         inscritSelected(getState().impression.impressionQueue[getState().impression.idxImpression])
@@ -92,7 +92,6 @@ export interface ImpressionState {
   idxImpression: number
   impressionQueue: Inscrit[]
   stopImpression: boolean
-  simulatePrint: boolean
   toSelectAfterPrint?: Inscrit
 }
 
@@ -103,7 +102,6 @@ const initialState: ImpressionState = {
   idxImpression: 0,
   impressionQueue: [],
   stopImpression: true,
-  simulatePrint: true,
   toSelectAfterPrint: undefined
 }
 
@@ -135,15 +133,11 @@ export const impressionSlice = createSlice({
     },
     setStopImpression: (state, action: PayloadAction<boolean>) => {
       state.stopImpression = action.payload
-    },
-    setSimulatePrint: (state, action:PayloadAction<boolean>)=>{
-      state.simulatePrint = action.payload
     }
   }
 })
 
-export const { nextPrint, resetPrints, setPrintQueue, setStopImpression, setSimulatePrint } =
-  impressionSlice.actions
+export const { nextPrint, resetPrints, setPrintQueue, setStopImpression } = impressionSlice.actions
 export default impressionSlice.reducer
 export const selectIdxImpression = (state: RootState) => state.impression.idxImpression
 export const selectImpressionQueue = (state: RootState) => state.impression.impressionQueue

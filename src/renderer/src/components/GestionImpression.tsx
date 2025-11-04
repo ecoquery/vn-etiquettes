@@ -2,15 +2,16 @@ import { selectSelected } from '../features/inscrits/inscritsSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import Etiquette from './Etiquette'
 import { useState } from 'react'
-import { Button, Checkbox, FormControlLabel, Paper, Stack, TextField } from '@mui/material'
-import { printAll, setSimulatePrint } from '@renderer/features/impression/impressionSlice'
+import { Button, Paper, Stack, TextField } from '@mui/material'
+import { printAll } from '@renderer/features/impression/impressionSlice'
 import { AppDispatch } from '@renderer/app/store'
+import { selectAnnee } from '@renderer/features/configuration/configurationSlice'
 
 export const GestionImpression = ({ dymo }) => {
   const dispatch: AppDispatch = useDispatch()
   const selectedInscrit = useSelector(selectSelected)
   const [nbPrint, setNbPrint] = useState(1)
-  const saison = '2025-2026'
+  const saison = useSelector(selectAnnee)
   return (
     <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <Paper>
@@ -45,19 +46,7 @@ export const GestionImpression = ({ dymo }) => {
         </Button>
       </Stack>
 
-      <Stack direction="row" alignContent="left" spacing={2} width={'100%'}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              defaultChecked
-              onChange={(event) => {
-                dispatch(setSimulatePrint(event.target.checked))
-              }}
-            />
-          }
-          label="Simuler l'impression"
-        />
-      </Stack>
+      <Stack direction="row" alignContent="left" spacing={2} width={'100%'}></Stack>
     </Stack>
   )
 }

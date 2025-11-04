@@ -6,10 +6,12 @@ import App from './App'
 import { getDymo } from './app/Dymo'
 import { Provider } from 'react-redux'
 import { store } from './app/store'
+import { loadConfiguration } from './features/configuration/configurationSlice'
 
 // Load DYMO js lib before building react app
 async function run() {
   const dymo = await getDymo()
+  store.dispatch(loadConfiguration)
 
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
@@ -20,4 +22,4 @@ async function run() {
   )
 }
 
-run()
+await run()
