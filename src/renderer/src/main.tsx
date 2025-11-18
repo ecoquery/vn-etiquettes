@@ -10,16 +10,20 @@ import { loadConfiguration } from './features/configuration/configurationSlice'
 
 // Load DYMO js lib before building react app
 async function run() {
-  const dymo = await getDymo()
-  store.dispatch(loadConfiguration)
+  try {
+    const dymo = await getDymo()
+    store.dispatch(loadConfiguration)
 
-  ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-    <React.StrictMode>
-      <Provider store={store}>
-        <App dymo={dymo} />
-      </Provider>
-    </React.StrictMode>
-  )
+    ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+      <React.StrictMode>
+        <Provider store={store}>
+          <App dymo={dymo} />
+        </Provider>
+      </React.StrictMode>
+    )
+  } catch (e) {
+    console.error('Erreur dans main: ', e)
+  }
 }
 
 await run()
