@@ -7,7 +7,7 @@ import { printAll } from '@renderer/features/impression/impressionSlice'
 import { AppDispatch } from '@renderer/app/store'
 import { selectAnnee } from '@renderer/features/configuration/configurationSlice'
 
-export const GestionImpression = ({ dymo }) => {
+export const GestionImpression = () => {
   const dispatch: AppDispatch = useDispatch()
   const selectedInscrit = useSelector(selectSelected)
   const [nbPrint, setNbPrint] = useState(1)
@@ -15,12 +15,12 @@ export const GestionImpression = ({ dymo }) => {
   return (
     <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <Paper>
-        <Etiquette inscrit={selectedInscrit} saison={saison} dymo={dymo} />
+        <Etiquette inscrit={selectedInscrit} saison={saison} />
       </Paper>
       <Button
         variant="contained"
         onClick={() => {
-          dispatch(printAll(dymo, saison, 1))
+          dispatch(printAll(saison, 1))
         }}
       >
         Imprimer cette étiquette
@@ -39,7 +39,7 @@ export const GestionImpression = ({ dymo }) => {
         <Button
           variant="contained"
           onClick={() => {
-            dispatch(printAll(dymo, saison, nbPrint))
+            dispatch(printAll(saison, nbPrint))
           }}
         >
           Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}

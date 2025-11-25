@@ -5,16 +5,8 @@ import { GestionImpression } from './components/GestionImpression'
 import { AppBar, Box, Button, Container, Grid, Toolbar, Typography } from '@mui/material'
 import { ComitiFileHandler } from './components/ComitiFileHandler'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
-const debugDymo = false
 
-function App({ dymo }): JSX.Element {
-  if (debugDymo) {
-    if (dymo !== undefined) {
-      console.log(dymo)
-    } else {
-      console.error('dymo is undefined')
-    }
-  }
+function App(): JSX.Element {
   const navItems = ['impression', 'configuration']
   const [curTab, setCurTab] = useState('impression')
 
@@ -28,7 +20,7 @@ function App({ dymo }): JSX.Element {
                 <GestionInscrits />
               </Grid>
               <Grid size={4}>
-                <GestionImpression dymo={dymo} />
+                <GestionImpression />
               </Grid>
             </Grid>
             <ComitiFileHandler />

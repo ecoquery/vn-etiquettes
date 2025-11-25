@@ -1,19 +1,7 @@
-import dymoURL from '../assets/DYMO.Label.Framework.3.0.txt'
+// import dymoURL from '../assets/DYMO.Label.Framework.3.0.txt'
+import Dymo from 'dymo-connect'
 
-/**
- * Loads the dymo framework.
- * To be used in headless tests and in the entrypoint of the app.
- */
-export function getDymo(altURL?: string): Promise<any> {
-  const url = altURL ?? dymoURL
-  return fetch(url)
-    .then((r) => r.text())
-    .then((script) => {
-      const updatedScript = script.substring(0, script.length - 4) + '.call(globalThis);'
-      eval(updatedScript)
-      return dymo.label.framework
-    })
-}
+export const dymo = new Dymo()
 
 /**
  * Génère une étiquette à imprimer

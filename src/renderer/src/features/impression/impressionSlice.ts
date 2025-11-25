@@ -1,39 +1,37 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { compareInscrit, Inscrit, inscritSelected, inscritsFilter } from '../inscrits/inscritsSlice'
-import { genereLabelContent } from '../../app/Dymo'
+import { genereLabelContent, dymo } from '../../app/Dymo'
 import { formatOffres } from '../../components/Etiquette'
 import { AppThunk, RootState } from '@renderer/app/store'
 
 /**
  * Imprime l'étiquette d'un inscrit
- * @param dymo le backend d'impression
  * @param inscrit l'inscrit dont on veut imprimer l'étiquette
  * @param saison la saison courante
  */
-export const print = async (dymo, inscrit: Inscrit, saison: string) => {
+export const print = async (inscrit: Inscrit, saison: string, printer: string) => {
   const labelData = genereLabelContent(inscrit.nom, formatOffres(inscrit.offres), saison)
-  const label = dymo.openLabelXml(labelData)
-  label.print()
+  await dymo.printLabel(printer, labelData)
 }
 
 /**
  * Déclenche l'impression des impressions restantes dans la file
- * @param dymo le backend d'impression
  * @param saison la saison courante
  * @returns un thunk qui imprime les impression restantes
  */
-const printQueue = (dymo, saison) => async (dispatch, getState: () => RootState) => {
+const printQueue = (saison) => async (dispatch, getState: () => RootState) => {
   if (getState().impression.stopImpression) {
     dispatch(inscritSelected(getState().impression.toSelectAfterPrint))
     dispatch(resetPrints())
   } else {
     const inscrit = getState().impression.impressionQueue[getState().impression.idxImpression]
-    if (inscrit !== undefined) {
+    const printer = getState().dymo.defaultPrinter
+    if (inscrit !== undefined && printer !== undefined) {
       dispatch(inscritSelected(inscrit))
       if (getState().configuration.simulatePrint) {
         console.log(`Simule l'impression de `, inscrit)
       } else {
-        await print(dymo, inscrit, saison)
+        await print(inscrit, saison, printer)
       }
       await new Promise((resolve) =>
         setTimeout(() => resolve(1), getState().configuration.printDelay * 1000)
@@ -42,7 +40,7 @@ const printQueue = (dymo, saison) => async (dispatch, getState: () => RootState)
       dispatch(
         inscritSelected(getState().impression.impressionQueue[getState().impression.idxImpression])
       )
-      dispatch(printQueue(dymo, saison))
+      dispatch(printQueue(saison))
     }
   }
 }
@@ -71,18 +69,17 @@ export const makeInscritsToPrint = (state: RootState, nbToPrint: number) => {
 
 /**
  * Action déclenchant une impression en batch
- * @param dymo backend d'impression d'étiquettes
  * @param saison saison courante
  * @param nbToPrint nombre d'étiquette à imprimer dans le batch
  * @returns la fonction thunk qui va déclencher l'impression
  */
 export const printAll =
-  (dymo, saison: string, nbToPrint: number): AppThunk =>
+  (saison: string, nbToPrint: number): AppThunk =>
   async (dispatch, getState) => {
     const inscritsToPrint = makeInscritsToPrint(getState(), nbToPrint)
     dispatch(setPrintQueue(inscritsToPrint))
     dispatch(setStopImpression(false))
-    dispatch(printQueue(dymo, saison))
+    dispatch(printQueue(saison))
   }
 
 /**

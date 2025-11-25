@@ -2,12 +2,14 @@ import { configureStore, type Action, type ThunkAction } from '@reduxjs/toolkit'
 import inscritReducer from '../features/inscrits/inscritsSlice'
 import impressionReducer from '../features/impression/impressionSlice'
 import configurationReducer from '@renderer/features/configuration/configurationSlice'
+import dymoReducer from '@renderer/features/dymo/dymoSlice'
 
 export const store = configureStore({
   reducer: {
     inscrits: inscritReducer,
     impression: impressionReducer,
-    configuration: configurationReducer
+    configuration: configurationReducer,
+    dymo: dymoReducer
   },
   devTools: true
 })
