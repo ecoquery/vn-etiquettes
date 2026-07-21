@@ -1,7 +1,8 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { AppThunk, RootState } from '@renderer/app/store'
+import type { PayloadAction } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit'
+import type { AppThunk, RootState } from '@renderer/app/store'
 import Dymo from 'dymo-connect'
-import { Printer } from 'dymo-connect/dist/types'
+import type { Printer } from 'dymo-connect/dist/types'
 
 const dymo = new Dymo()
 

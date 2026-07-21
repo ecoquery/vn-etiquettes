@@ -1,10 +1,10 @@
-import { JSX, useEffect, useState } from 'react'
-import { genereLabelContent } from '../app/Dymo'
-import { Inscrit, Offre } from '@renderer/features/inscrits/inscritsSlice'
 import { Alert } from '@mui/material'
-import { selectDefaultPrinter } from '@renderer/features/dymo/dymoSlice'
+import type { JSX } from 'react'
+import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { dymo } from '@renderer/app/Dymo'
+import { dymo, genereLabelContent } from '../app/Dymo'
+import { selectDefaultPrinter } from '../features/dymo/dymoSlice'
+import type { Inscrit, Offre } from '../features/inscrits/inscritsSlice'
 
 interface EtiquetteProps {
   inscrit?: Inscrit
@@ -42,7 +42,7 @@ function Etiquette({ inscrit, saison }: Readonly<EtiquetteProps>): JSX.Element {
         console.error(response.data)
       }
     })
-  }, [inscrit, saison])
+  }, [labelData])
 
   if (printer === undefined) {
     return (

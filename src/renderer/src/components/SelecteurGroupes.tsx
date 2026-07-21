@@ -1,15 +1,10 @@
-import {
-  Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  Stack
-} from '@mui/material'
+import type { SelectChangeEvent } from '@mui/material'
+import { Button, FormControl, InputLabel, MenuItem, Select, Stack } from '@mui/material'
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   activiteSelected,
   inscritApresSelected,
@@ -20,9 +15,7 @@ import {
   selectSelectedActivite,
   selectSelectedOffre,
   stringOfOffre
-} from '@renderer/features/inscrits/inscritsSlice'
-import { useDispatch, useSelector } from 'react-redux'
-import dayjs, { Dayjs } from 'dayjs'
+} from '../features/inscrits/inscritsSlice'
 
 export default function SelecteurGroupes() {
   const dispatch = useDispatch()
@@ -31,7 +24,7 @@ export default function SelecteurGroupes() {
   const offres = useSelector(selectOffres)
   const selectedOffre = useSelector(selectSelectedOffre)
   const filteredOffres = selectedActivite
-    ? offres.filter((o) => o.activite == selectedActivite)
+    ? offres.filter((o) => o.activite === selectedActivite)
     : offres
   const inscritApres = useSelector(selectInscritApres)
 

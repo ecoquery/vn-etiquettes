@@ -1,11 +1,11 @@
-import { selectSelected } from '../features/inscrits/inscritsSlice'
-import { useDispatch, useSelector } from 'react-redux'
-import Etiquette from './Etiquette'
-import { useState } from 'react'
 import { Button, Paper, Stack, TextField } from '@mui/material'
-import { printAll } from '@renderer/features/impression/impressionSlice'
-import { AppDispatch } from '@renderer/app/store'
-import { selectAnnee } from '@renderer/features/configuration/configurationSlice'
+import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch } from '../app/store'
+import { selectAnnee } from '../features/configuration/configurationSlice'
+import { printAll } from '../features/impression/impressionSlice'
+import { selectSelected } from '../features/inscrits/inscritsSlice'
+import Etiquette from './Etiquette'
 
 export const GestionImpression = () => {
   const dispatch: AppDispatch = useDispatch()

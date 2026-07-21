@@ -11,7 +11,9 @@ import {
   Typography
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { AppDispatch } from '@renderer/app/store'
+import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch } from '../app/store'
 import {
   defaultHeadersComiti,
   exportConfiguration,
@@ -30,15 +32,9 @@ import {
   updateHeader,
   updatePrintDelay,
   updateSimulatePrint
-} from '@renderer/features/configuration/configurationSlice'
-import {
-  selectCategories,
-  selectPiscines,
-  titreCourtCalcule
-} from '@renderer/features/inscrits/inscritsSlice'
-import { useDispatch, useSelector } from 'react-redux'
+} from '../features/configuration/configurationSlice'
+import { selectCategories, titreCourtCalcule } from '../features/inscrits/inscritsSlice'
 import { AliasEditor } from './AliasEditor'
-import { useState } from 'react'
 
 // From https://mui.com/material-ui/react-button/#file-upload
 const VisuallyHiddenInput = styled('input')({
@@ -115,7 +111,7 @@ export const ConfigurationPanel = () => {
           >
             Restaurer
           </Button>
-          <Button component="label" variant="contained" role={undefined} tabIndex={-1}>
+          <Button component="label" variant="contained" tabIndex={-1}>
             Importer
             <VisuallyHiddenInput type="file" value={emptyCfgFile} onChange={handleImport} />
           </Button>
