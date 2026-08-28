@@ -6,3 +6,6 @@ out
 *.log*
 .envrc
 VN-Cartes*.ods
+Adhérents.csv
+Adhérents.xlsx
+Créneaux.csv
