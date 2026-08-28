@@ -1,15 +1,16 @@
 import { render } from '@testing-library/react'
 import Etiquette from './Etiquette'
-import { describe, it } from 'vitest'
-import { testWithDymo } from '../app/Dymo-test'
+import { describe, expect, it, test } from 'vitest'
+import { Provider } from 'react-redux'
+import { store } from '../app/store'
 
 describe('Etiquette', () => {
-  testWithDymo('Renders properly with dymo', ({ dymo }) => {
-    render(
-      <Etiquette
-        etiquetteData={{ nom: 'test-nom', creneaux: 'crenaux-test', annee: 'annee-test' }}
-        dymo={dymo}
-      />
+  test('Renders properly with dymo', () => {
+    const result = render(
+      <Provider store={store}>
+        <Etiquette saison="2025-2026" />
+      </Provider>
     )
+    expect(result?.baseElement).toBeDefined()
   })
 })
