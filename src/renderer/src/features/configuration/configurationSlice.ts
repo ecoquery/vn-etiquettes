@@ -39,6 +39,16 @@ export const defaultHeadersComiti: HeadersComiti = {
   cDateInscription: "Date d'inscription"
 }
 
+/** Valeur par défaut des colonnes du fichier d'import de créneau de MonClub */
+export const defaultHeadersMonClub = {
+  cNomCreneau: 'Nom du créneau',
+  cNomActivite: 'Nom',
+  cDateDebut: 'Date de début du créneau'
+}
+
+/** Nom des colonnes dans le fichiers d'import des créneaux */
+export type HeadersMonClub = typeof defaultHeadersMonClub
+
 export interface ConfigState {
   annee: string
   printDelay: number
@@ -46,6 +56,9 @@ export interface ConfigState {
   aliasGroupes: Record<string, Alias>
   aliasPiscines: Record<string, Alias>
   headersComiti: HeadersComiti
+  headersMonClub: HeadersMonClub
+  sansSceance: Array<string>
+  sansCarte: Array<string>
 }
 
 const aIgnore = () => ({ ignore: true, replacement: '' })
@@ -73,7 +86,10 @@ const initialState: ConfigState = {
     'Piscine des Gratte Ciel': aIgnore(),
     Compétition: aReplace('Compétition')
   },
-  headersComiti: { ...defaultHeadersComiti }
+  headersComiti: { ...defaultHeadersComiti },
+  headersMonClub: { ...defaultHeadersMonClub },
+  sansSceance: ['Compétition Licence Maîtres', 'Encadrants - Coachs', 'Officiels - bénévoles'],
+  sansCarte: ['Officiels - bénévoles']
 }
 
 export const configurationSlice = createSlice({

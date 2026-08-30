@@ -5,9 +5,10 @@ import { GestionImpression } from './components/GestionImpression'
 import { AppBar, Box, Button, Container, Grid, Toolbar, Typography } from '@mui/material'
 import { ComitiFileHandler } from './components/ComitiFileHandler'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
+import { CreneauxPanel } from './components/CreneauxPanel'
 
 function App(): JSX.Element {
-  const navItems = ['impression', 'configuration']
+  const navItems = ['impression', 'creneaux', 'configuration']
   const [curTab, setCurTab] = useState('impression')
 
   const tabComponent = (tabItem) => {
@@ -24,6 +25,12 @@ function App(): JSX.Element {
               </Grid>
             </Grid>
             <ComitiFileHandler />
+          </Container>
+        )
+      case 'creneaux':
+        return (
+          <Container style={{ paddingTop: '40px' }}>
+            <CreneauxPanel />
           </Container>
         )
       case 'configuration':

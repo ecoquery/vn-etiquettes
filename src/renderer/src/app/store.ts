@@ -3,13 +3,15 @@ import inscritReducer from '../features/inscrits/inscritsSlice'
 import impressionReducer from '../features/impression/impressionSlice'
 import configurationReducer from '../features/configuration/configurationSlice'
 import dymoReducer from '../features/dymo/dymoSlice'
+import creneauxReducer from '../features/creneaux/creneauxSlice'
 
 export const store = configureStore({
   reducer: {
     inscrits: inscritReducer,
     impression: impressionReducer,
     configuration: configurationReducer,
-    dymo: dymoReducer
+    dymo: dymoReducer,
+    creneaux: creneauxReducer
   },
   devTools: true
 })

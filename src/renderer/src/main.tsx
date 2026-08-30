@@ -7,11 +7,13 @@ import { Provider } from 'react-redux'
 import { store } from './app/store'
 import { loadConfiguration } from './features/configuration/configurationSlice'
 import { updatePrinters } from './features/dymo/dymoSlice'
+import { loadCreneaux } from './features/creneaux/creneauxSlice'
 
 // Load DYMO js lib before building react app
 async function run() {
   try {
     store.dispatch(loadConfiguration)
+    store.dispatch(loadCreneaux)
     store.dispatch(updatePrinters)
 
     ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
