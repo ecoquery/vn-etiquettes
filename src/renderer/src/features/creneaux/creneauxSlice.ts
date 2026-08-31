@@ -10,6 +10,8 @@ const creneauxLocalStorageKey = 'creneaux'
  * un type d'adhérent. */
 export interface Activite {
   nom: string
+  sanscarte?: boolean
+  sansseance?: boolean
 }
 
 /**
@@ -17,9 +19,13 @@ export interface Activite {
  * @param line la ligne du fichier d'import
  * @param h les headers du fichier d'import
  */
-function activiteFromLine(line: Record<string, string>, h: HeadersMonClub): Activite {
+function activiteFromLine(
+  line: Record<string, string>,
+  prevAct: Activite | undefined,
+  h: HeadersMonClub
+): Activite {
   const nom = line[h.cNomActivite]
-  return { nom }
+  return { nom, sanscarte: prevAct?.sanscarte || false, sansseance: prevAct?.sansseance || false }
 }
 
 /** Un créneau est une session (parfois juste une catégorie comme dans le cas
@@ -64,7 +70,7 @@ function jourFromDate(dateS: string): string | undefined {
  * @param config La configuration pour récupérer le mapping adresse piscine
  * @returns la piscine, si l'adresse est connue
  */
-function piscineFromAdresse(adresse: string, config: ConfigState): string|undefined {
+function piscineFromAdresse(adresse: string, config: ConfigState): string | undefined {
   if (adresse in config.adressePiscine) {
     return config.adressePiscine[adresse]
   } else {
@@ -118,6 +124,22 @@ export const creneauxSlice = createSlice({
   reducers: {
     updateCreneauxData: (state, action: PayloadAction<CreneauxState>) => {
       Object.assign(state, action.payload)
+    },
+    setActiviteSansCarte: (state, action: PayloadAction<{ nom: string; sanscarte: boolean }>) => {
+      const nom = action.payload.nom
+      if (nom in state.activites) {
+        state.activites[nom].sanscarte = action.payload.sanscarte
+      } else {
+        console.log('Activité ', nom, ' non trouvée')
+      }
+    },
+    setActiviteSansSeance: (state, action: PayloadAction<{ nom: string; sansseance: boolean }>) => {
+      const nom = action.payload.nom
+      if (nom in state.activites) {
+        state.activites[nom].sansseance = action.payload.sansseance
+      } else {
+        console.log('Activité ', nom, ' non trouvée')
+      }
     }
   }
 })
@@ -128,7 +150,8 @@ export const creneauxSlice = createSlice({
  * @param _dispatch inutilisé
  * @param getState pour accéder à l'état global
  */
-const saveCreneaux: AppThunk = (_dispatch, getState) => {
+export const saveCreneaux: AppThunk = (_dispatch, getState) => {
+  console.log('Save creneaux')
   localStorage.setItem(creneauxLocalStorageKey, JSON.stringify(getState().creneaux))
 }
 
@@ -149,6 +172,10 @@ export const loadCreneaux: AppThunk = (dispatch, _getState) => {
  */
 export const importCreneauxWithData =
   (rows: Array<Record<string, string>>) => (dispatch: AppDispatch, getState: () => RootState) => {
+    const previousActivitesString = localStorage.getItem(creneauxLocalStorageKey)
+    const previousActivites = (
+      JSON.parse(previousActivitesString ?? JSON.stringify(initialState)) as CreneauxState
+    ).activites
     console.log('Importation des créneaux', rows)
     const activites: Record<string, Activite> = {}
     const creneaux: Record<string, Creneau> = {}
@@ -158,7 +185,7 @@ export const importCreneauxWithData =
       const nomCreneau = row[hd.cNomCreneau]
       const nomActivite = row[hd.cNomActivite]
       if (!(nomActivite in activites)) {
-        activites[nomActivite] = activiteFromLine(row, hd)
+        activites[nomActivite] = activiteFromLine(row, previousActivites[nomActivite], hd)
       }
       const activite = activites[nomActivite]
       if (nomCreneau) {
@@ -169,7 +196,7 @@ export const importCreneauxWithData =
     dispatch(saveCreneaux)
   }
 
-// export const { ....... } = creneauxSlice.actions
+export const { setActiviteSansCarte, setActiviteSansSeance } = creneauxSlice.actions
 
 export default creneauxSlice.reducer
 

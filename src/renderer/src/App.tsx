@@ -1,14 +1,16 @@
-import Versions from './components/Versions'
-import { JSX, useState } from 'react'
-import { GestionInscrits } from './components/GestionInscrits'
-import { GestionImpression } from './components/GestionImpression'
 import { AppBar, Box, Button, Container, Grid, Toolbar, Typography } from '@mui/material'
+import type { JSX } from 'react'
+import { useState } from 'react'
 import { ComitiFileHandler } from './components/ComitiFileHandler'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
 import { CreneauxPanel } from './components/CreneauxPanel'
+import { GestionImpression } from './components/GestionImpression'
+import { GestionInscrits } from './components/GestionInscrits'
+import Versions from './components/Versions'
+import ActivitePanel from './components/ActivitePanel'
 
 function App(): JSX.Element {
-  const navItems = ['impression', 'creneaux', 'configuration']
+  const navItems = ['impression', 'creneaux', 'activites', 'configuration']
   const [curTab, setCurTab] = useState('impression')
 
   const tabComponent = (tabItem) => {
@@ -31,6 +33,12 @@ function App(): JSX.Element {
         return (
           <Container style={{ paddingTop: '40px' }}>
             <CreneauxPanel />
+          </Container>
+        )
+      case 'activites':
+        return (
+          <Container style={{ paddingTop: '40px' }}>
+            <ActivitePanel />
           </Container>
         )
       case 'configuration':
