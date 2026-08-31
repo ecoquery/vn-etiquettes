@@ -40,7 +40,7 @@ const SheetReader = ({ onDataLoaded }: { onDataLoaded: (data: SheetData[]) => vo
         const worksheetName = workbook.SheetNames[0] // Prendre la première feuille
         const worksheet = workbook.Sheets[worksheetName]
         const jsonData: SheetData[] = XLSX.utils.sheet_to_json(worksheet)
-        changeData(data)
+        changeData(jsonData)
       } catch (error) {
         console.error('Erreur lors de la lecture du fichier :', error)
       }
