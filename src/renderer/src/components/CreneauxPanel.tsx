@@ -13,8 +13,16 @@ export const CreneauxPanel = () => {
   // Données des créneaux sous forme de tableau
   const data = Object.values(creneaux)
   const columns: GridColDef<(typeof data)[number]>[] = [
-    { field: 'nom', headerName: 'Créneau', align: 'left', headerAlign: 'center' },
-    { field: 'activite', headerName: 'Activité', valueFormatter: (act: Activite) => act.nom }
+    { field: 'nom', headerName: 'Créneau', align: 'left', headerAlign: 'center', width: 500 },
+    {
+      field: 'activite',
+      headerName: 'Activité',
+      valueFormatter: (act: Activite) => act.nom,
+      width: 300
+    },
+    { field: 'jour', headerName: 'Jour' },
+    { field: 'debut', headerName: 'Heure' },
+    { field: 'lieu', headerName: 'Piscine' }
   ]
   return (
     <Container>

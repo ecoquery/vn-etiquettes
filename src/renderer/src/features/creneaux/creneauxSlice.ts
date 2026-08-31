@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { AppDispatch, AppThunk, RootState } from '@renderer/app/store'
+import { ConfigState, HeadersMonClub } from '../configuration/configurationSlice'
 
 /** Clé avec laquelle les données sont stockées dans le localStorage de
  * l'application. */
@@ -11,6 +12,16 @@ export interface Activite {
   nom: string
 }
 
+/**
+ * Créée une activité à partir d'une ligne du fichier d'import
+ * @param line la ligne du fichier d'import
+ * @param h les headers du fichier d'import
+ */
+function activiteFromLine(line: Record<string, string>, h: HeadersMonClub): Activite {
+  const nom = line[h.cNomActivite]
+  return { nom }
+}
+
 /** Un créneau est une session (parfois juste une catégorie comme dans le cas
  * des compétiteurs). Il est rattaché à une activité. */
 export interface Creneau {
@@ -20,6 +31,65 @@ export interface Creneau {
   fin?: string
   lieu?: string
   jour?: string
+}
+
+/**
+ * Donne le jour de la semaine en fonction de la date
+ * @param dateS Une date dont on veut le jour
+ * @returns le jour de la semaine à afficher
+ */
+function jourFromDate(dateS: string): string | undefined {
+  const [day, month, year] = dateS.split('/').map(Number)
+
+  // Créer un objet Date (attention : les mois sont indexés à 0 en JavaScript)
+  const date = new Date(year, month - 1, day)
+
+  // Vérifier si la date est valide
+  if (isNaN(date.getTime())) {
+    console.log('Format de date invalide. Utilisez jj/mm/aaaa.', dateS)
+    return undefined
+  }
+
+  // Utiliser Intl.DateTimeFormat pour obtenir le jour en français
+  //const fullDay = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+  const shortDay = date.toLocaleDateString('fr-FR', { weekday: 'short' })
+
+  // Retourner le résultat
+  return shortDay
+}
+
+/**
+ * Détermine la piscine via l'adresse
+ * @param adresse L'adresse saisie dans mon club
+ * @param config La configuration pour récupérer le mapping adresse piscine
+ * @returns la piscine, si l'adresse est connue
+ */
+function piscineFromAdresse(adresse: string, config: ConfigState): string|undefined {
+  if (adresse in config.adressePiscine) {
+    return config.adressePiscine[adresse]
+  } else {
+    console.log(`Pas de piscine pour l'adresse '${adresse}'`)
+    return undefined
+  }
+}
+
+/**
+ *
+ * @param data ligne du fichier d'import
+ * @param activite activite pour ce créneau
+ * @param h noms des headers dans le fichier d'import
+ */
+function creneauFromLine(
+  data: Record<string, string>,
+  activite: Activite,
+  config: ConfigState
+): Creneau {
+  const h = config.headersMonClub
+  const nom = data[h.cNomCreneau]
+  const jour = jourFromDate(data[h.cDateDebut])
+  const debut = data[h.cHeureDebut]
+  const lieu = piscineFromAdresse(data[h.cAdresse], config)
+  return { nom, activite, jour, debut, lieu }
 }
 
 /**
@@ -79,18 +149,20 @@ export const loadCreneaux: AppThunk = (dispatch, _getState) => {
  */
 export const importCreneauxWithData =
   (rows: Array<Record<string, string>>) => (dispatch: AppDispatch, getState: () => RootState) => {
+    console.log('Importation des créneaux', rows)
     const activites: Record<string, Activite> = {}
     const creneaux: Record<string, Creneau> = {}
-    const hd = getState().configuration.headersMonClub
+    const config = getState().configuration
+    const hd = config.headersMonClub
     for (const row of rows) {
       const nomCreneau = row[hd.cNomCreneau]
       const nomActivite = row[hd.cNomActivite]
       if (!(nomActivite in activites)) {
-        activites[nomActivite] = { nom: nomActivite }
+        activites[nomActivite] = activiteFromLine(row, hd)
       }
       const activite = activites[nomActivite]
       if (nomCreneau) {
-        creneaux[nomCreneau] = { nom: nomCreneau, activite }
+        creneaux[nomCreneau] = creneauFromLine(row, activite, config)
       }
     }
     dispatch(creneauxSlice.actions.updateCreneauxData({ activites, creneaux }))

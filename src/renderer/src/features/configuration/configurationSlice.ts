@@ -43,7 +43,9 @@ export const defaultHeadersComiti: HeadersComiti = {
 export const defaultHeadersMonClub = {
   cNomCreneau: 'Nom du créneau',
   cNomActivite: 'Nom',
-  cDateDebut: 'Date de début du créneau'
+  cDateDebut: 'Date de début du créneau',
+  cHeureDebut: 'Heure',
+  cAdresse: 'Adresse'
 }
 
 /** Nom des colonnes dans le fichiers d'import des créneaux */
@@ -55,6 +57,7 @@ export interface ConfigState {
   simulatePrint: boolean
   aliasGroupes: Record<string, Alias>
   aliasPiscines: Record<string, Alias>
+  adressePiscine: Record<string, string>
   headersComiti: HeadersComiti
   headersMonClub: HeadersMonClub
   sansSceance: Array<string>
@@ -85,6 +88,12 @@ const initialState: ConfigState = {
     'Piscine André Boulloche': aReplace('Boulloche'),
     'Piscine des Gratte Ciel': aIgnore(),
     Compétition: aReplace('Compétition')
+  },
+  adressePiscine: {
+    '59 avenue Marcel Cerdan, 69100, Villeurbanne': 'Centre Nautique Etienne Gagnaire',
+    '96 rue Francis De Pressensé, 69100, Villeurbanne': 'Piscine André Boulloche',
+    'Place Lazare Goujon, 69100, Villeurbanne': 'Piscine des Gratte Ciel',
+    'Place Lazar Goujon, 69100, Villeurbanne': 'Piscine des Gratte Ciel'
   },
   headersComiti: { ...defaultHeadersComiti },
   headersMonClub: { ...defaultHeadersMonClub },
