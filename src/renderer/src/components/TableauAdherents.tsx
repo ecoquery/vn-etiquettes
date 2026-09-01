@@ -1,15 +1,12 @@
 import { Typography } from '@mui/material'
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
-import {
-  selectDisplayedAdherent,
-  setDisplayAdherent
-} from '@renderer/features/impression/impressionSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
 import { compareAdherents, selectAdherents } from '../features/adherents/adherentsSlice'
 import type { Creneau } from '../features/creneaux/creneauxSlice'
 import { compareCreneaux } from '../features/creneaux/creneauxSlice'
+import { selectDisplayedAdherent, setDisplayAdherent } from '../features/impression/impressionSlice'
 
 const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }) => {
   const dispatch: AppDispatch = useDispatch()
