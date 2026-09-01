@@ -1,9 +1,8 @@
-import { Button, Checkbox, Container, Stack, Typography } from '@mui/material'
+import { Checkbox, Container, Stack, Typography } from '@mui/material'
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
-import type { Activite } from '../features/creneaux/creneauxSlice'
 import {
   saveCreneaux,
   selectActivites,

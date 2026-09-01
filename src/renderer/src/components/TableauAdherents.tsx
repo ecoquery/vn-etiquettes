@@ -1,29 +1,34 @@
 import { Typography } from '@mui/material'
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid'
 import { DataGrid } from '@mui/x-data-grid'
+import { selectAliasPiscines } from '@renderer/features/configuration/configurationSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
-import { compareAdherents, selectAdherents } from '../features/adherents/adherentsSlice'
-import type { Creneau } from '../features/creneaux/creneauxSlice'
-import { compareCreneaux } from '../features/creneaux/creneauxSlice'
+import { selectAdherents } from '../features/adherents/adherentsSlice'
+import { selectActivites, selectCreneaux } from '../features/creneaux/creneauxSlice'
 import { selectDisplayedAdherent, setDisplayAdherent } from '../features/impression/impressionSlice'
+import { buildAdherentDisplay, compareAdherentDisplay } from './adherentDisplay'
 
 const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }) => {
   const dispatch: AppDispatch = useDispatch()
+  const activites = useSelector(selectActivites)
+  const creneaux = useSelector(selectCreneaux)
+  const aliasPiscines = useSelector(selectAliasPiscines)
   const adherents = useSelector(selectAdherents)
+  // console.log(adherents)
+  // console.log(selectedAdherents)
   const data = selectedAdherents
     .map((n) => {
       return adherents[n]
     })
-    .toSorted(compareAdherents)
+    .filter(Boolean)
+    .map(buildAdherentDisplay(creneaux, activites, aliasPiscines))
+    .toSorted(compareAdherentDisplay)
   const displayedAdherent = useSelector(selectDisplayedAdherent)
-  const creneauDisplay = (c: Creneau) => `${c.jour} ${c.debut} - ${c.lieu}`
-  const creneauxDisplay = (cr: Record<string, Creneau>) =>
-    Object.values(cr).toSorted(compareCreneaux).map(creneauDisplay).join(', ')
 
   const columns: GridColDef<(typeof data)[number]>[] = [
     {
-      field: 'nom',
+      field: 'id',
       headerName: 'Adhérent',
       align: 'left',
       headerAlign: 'center',
@@ -34,7 +39,7 @@ const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }
     {
       field: 'creneaux',
       headerName: 'Créneaux',
-      valueFormatter: creneauxDisplay,
+      valueFormatter: (cr: string[]) => cr.join(', '),
       width: 500,
       sortable: false
     }
@@ -51,13 +56,18 @@ const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }
 
   const rowSelectionModel: GridRowSelectionModel = {
     type: 'include',
-    ids: new Set(displayedAdherent ? [displayedAdherent.nom] : [])
+    ids: new Set(displayedAdherent ? [displayedAdherent.id] : [])
   }
 
   const rowSelectionChanged = (newRowSelectionModel: GridRowSelectionModel) => {
     const nom = newRowSelectionModel.ids.values().next().value
-    // setUserSelection(nComiti)
-    dispatch(setDisplayAdherent(adherents[nom ?? '']))
+    const adherent = adherents[nom ?? '']
+    console.log('new selection: ', adherent, ' from ', nom)
+    dispatch(
+      setDisplayAdherent(
+        adherent ? buildAdherentDisplay(creneaux, activites, aliasPiscines)(adherent) : undefined
+      )
+    )
   }
 
   // gestion du tri
@@ -92,7 +102,7 @@ const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }
           // initialState={{ sorting: { sortModel: defaultSortModelInGrid } }}
           columns={columns}
           rows={data}
-          getRowId={(row) => row.nom || ''}
+          getRowId={(row) => row.id || ''}
           rowSelectionModel={rowSelectionModel}
           onRowSelectionModelChange={rowSelectionChanged}
           // onSortModelChange={sortModelUpdated}

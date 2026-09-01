@@ -8,8 +8,7 @@ import {
   ListItem,
   Stack,
   TextField,
-  Toolbar,
-  Typography
+  Toolbar
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { useState } from 'react'
@@ -211,9 +210,8 @@ export const ConfigurationPanel = () => {
         return piscines()
       case 'Entêtes':
         return entetes()
-      default:
-        return <></>
     }
+    return undefined
   }
 
   return (

@@ -36,9 +36,8 @@ export function compareActivite(a1: Activite, a2: Activite): number {
  * des compétiteurs). Il est rattaché à une activité. */
 export interface Creneau {
   nom: string
-  activite: Activite
+  activite: string
   debut?: string
-  fin?: string
   lieu?: string
   jour?: string
 }
@@ -99,7 +98,7 @@ function creneauFromLine(
   const jour = jourFromDate(data[h.cDateDebut])
   const debut = data[h.cHeureDebut]
   const lieu = piscineFromAdresse(data[h.cAdresse], config)
-  return { nom, activite, jour, debut, lieu }
+  return { nom, activite: activite.nom, jour, debut, lieu }
 }
 
 const jours: (string | undefined)[] = new Array(7).fill(1).map((_, i) => {
@@ -109,6 +108,7 @@ const compareJours = (j1: string | undefined, j2: string | undefined) => {
   return jours.indexOf(j1) - jours.indexOf(j2)
 }
 
+
 /**
  * Comparateur de créneaux
  * @param c1 premier créneau
@@ -117,7 +117,7 @@ const compareJours = (j1: string | undefined, j2: string | undefined) => {
  * s'il est après, 0 s'ils sont égaux
  */
 export function compareCreneaux(c1: Creneau, c2: Creneau): number {
-  const aCmp = compareActivite(c1.activite, c2.activite)
+  const aCmp = c1.activite.localeCompare(c2.activite)
   if (aCmp !== 0) return aCmp
   const jCmp = compareJours(c1.jour, c2.jour)
   if (jCmp !== 0) return jCmp
@@ -140,7 +140,7 @@ export interface CreneauxState {
 const initialActivites = { 'Activité Test': { nom: 'Activité Test' } }
 /** Données fictives */
 const initialCreneaux = {
-  'Créneau Test': { nom: 'Créneau Test', activite: initialActivites['Activité Test'] }
+  'Créneau Test': { nom: 'Créneau Test', activite: 'Activité Test' }
 }
 
 const initialState: CreneauxState = {

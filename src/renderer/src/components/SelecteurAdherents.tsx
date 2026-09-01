@@ -1,14 +1,20 @@
 import type { SelectChangeEvent } from '@mui/material'
 import { FormControl, InputLabel, MenuItem, Select, Stack } from '@mui/material'
+import { selectAliasPiscines } from '@renderer/features/configuration/configurationSlice'
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { type Adherent, selectAdherents } from '../features/adherents/adherentsSlice'
+import { creneauAfficheable, selectAdherents } from '../features/adherents/adherentsSlice'
 import {
   compareActivite,
   compareCreneaux,
   selectActivites,
   selectCreneaux
 } from '../features/creneaux/creneauxSlice'
+import {
+  type AdherentDisplay,
+  buildAdherentDisplay,
+  compareAdherentDisplay
+} from './adherentDisplay'
 
 const toutes = 'toutes'
 const tous = 'tous'
@@ -21,22 +27,30 @@ const SelecteurAdherents = ({
   const activites = useSelector(selectActivites)
   const creneaux = useSelector(selectCreneaux)
   const adherents = useSelector(selectAdherents)
+  const aliasPiscines = useSelector(selectAliasPiscines)
   const [selectedActivite, setSelectedActivite] = useState(toutes)
   const [selectedCreneau, setSelectedCreneau] = useState(tous)
   const activitesArray = Object.values(activites).toSorted(compareActivite)
   const creneauxArray = Object.values(creneaux)
     .toSorted(compareCreneaux)
-    .filter((c) => selectedActivite === toutes || c.activite.nom === selectedActivite)
+    .filter(
+      (c) =>
+        (selectedActivite === toutes || c.activite === selectedActivite) &&
+        creneauAfficheable(activites, aliasPiscines)
+    )
+  const adherentsArray = Object.values(adherents)
+    .map(buildAdherentDisplay(creneaux, activites, aliasPiscines))
+    .toSorted(compareAdherentDisplay)
 
-  const filterAdherents = (nomActivite, nomCreneau) => (a: Adherent) => {
+  const filterAdherents = (nomActivite: string, nomCreneau: string) => (a: AdherentDisplay) => {
     if (nomCreneau === tous) {
       if (nomActivite === toutes) {
         return true
       } else {
-        return nomActivite === a.premierCreneau?.activite.nom
+        return nomActivite === creneaux[a.premierCreneau || '']?.activite
       }
     } else {
-      return nomCreneau === a.premierCreneau?.nom
+      return nomCreneau === a.premierCreneau
     }
   }
 
@@ -46,17 +60,12 @@ const SelecteurAdherents = ({
     let nomCreneau = selectedCreneau
     if (
       value === toutes ||
-      (selectedCreneau !== tous &&
-        creneaux[selectedCreneau]?.activite?.nom !== activites[value]?.nom)
+      (selectedCreneau !== tous && creneaux[selectedCreneau]?.activite !== value)
     ) {
       setSelectedCreneau(tous)
       nomCreneau = tous
     }
-    onSelectionChange(
-      Object.values(adherents)
-        .filter(filterAdherents(value, nomCreneau))
-        .map((a) => a.nom)
-    )
+    onSelectionChange(adherentsArray.filter(filterAdherents(value, nomCreneau)).map((a) => a.id))
   }
 
   const handleCreneauChange = (event: SelectChangeEvent) => {
@@ -64,14 +73,10 @@ const SelecteurAdherents = ({
     setSelectedCreneau(value)
     let nomActivite = selectedActivite
     if (value !== tous) {
-      nomActivite = creneaux[value].activite.nom
+      nomActivite = creneaux[value].activite
       setSelectedActivite(nomActivite)
     }
-    onSelectionChange(
-      Object.values(adherents)
-        .filter(filterAdherents(nomActivite, value))
-        .map((a) => a.nom)
-    )
+    onSelectionChange(adherentsArray.filter(filterAdherents(nomActivite, value)).map((a) => a.id))
   }
 
   return (

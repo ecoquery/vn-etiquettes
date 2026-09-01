@@ -3,34 +3,37 @@ import type { JSX } from 'react'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { dymo, genereLabelContent } from '../app/Dymo'
-import { nomSimple, type Adherent } from '../features/adherents/adherentsSlice'
 import type { Alias } from '../features/configuration/configurationSlice'
-import { selectAliasPiscines } from '../features/configuration/configurationSlice'
-import type { Creneau } from '../features/creneaux/creneauxSlice'
+import type { Activite, Creneau } from '../features/creneaux/creneauxSlice'
 import { selectDefaultPrinter } from '../features/dymo/dymoSlice'
+import type { AdherentDisplay } from './adherentDisplay'
 
 interface EtiquetteProps {
-  adherent?: Adherent
+  adherent?: AdherentDisplay
   saison: string
 }
 
-export function formatCreneaux(cr: Record<string, Creneau>, piscineAlias: Record<string, Alias>) {
-  const creneaux = Object.values(cr)
+export function formatCreneaux(
+  cr: string[],
+  activites: Record<string, Activite>,
+  creneaux: Record<string, Creneau>,
+  piscineAlias: Record<string, Alias>
+) {
+  const crC = cr.map((c) => creneaux[c])
   const activitesSansSeances = new Set(
-    creneaux
-      .filter((c) => c.activite.sansseance && !c.activite.sanscarte)
-      .map((c) => c.activite.nom)
+    crC
+      .filter((c) => activites[c.activite]?.sansseance && !activites[c.activite]?.sanscarte)
+      .map((c) => c.activite)
   )
-  const creneauxAAfficher = creneaux
-    .filter((c) => !(c.activite.nom in activitesSansSeances) && !c.activite.sanscarte)
+  const creneauxAAfficher = crC
+    .filter((c) => !(c.activite in activitesSansSeances) && !activites[c.activite]?.sanscarte)
     .map((c) => `${c.jour} ${c.debut} - ${piscineAlias[c.lieu ?? ''].replacement ?? c.lieu}`)
   return Array.from(activitesSansSeances).concat(creneauxAAfficher).join('\n')
 }
 
 function Etiquette({ adherent, saison }: Readonly<EtiquetteProps>): JSX.Element {
-  const aliasPiscine = useSelector(selectAliasPiscines)
-  const nom = adherent ? nomSimple(adherent) : ''
-  const creneauxString = formatCreneaux(adherent?.creneaux ?? {}, aliasPiscine)
+  const nom = adherent?.nom ?? ''
+  const creneauxString = (adherent?.creneaux ?? []).join('\n')
   const labelData = genereLabelContent(nom, creneauxString, saison)
   const printer = useSelector(selectDefaultPrinter)
   const [labelContent, setLabelContent] = useState<string | undefined>(undefined)
@@ -60,7 +63,7 @@ function Etiquette({ adherent, saison }: Readonly<EtiquetteProps>): JSX.Element 
   } else {
     return (
       <img
-        alt={`Étiquette ${saison} pour ${nom} avec les créneaux ${formatCreneaux(adherent?.creneaux ?? {}, aliasPiscine)}`}
+        alt={`Étiquette ${saison} pour ${nom} avec les créneaux ${creneauxString}`}
         src={labelContent}
       />
     )

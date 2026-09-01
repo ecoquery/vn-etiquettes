@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AppThunk, RootState } from '@renderer/app/store'
-import { recomputeAdherentDerivedData } from '../adherents/adherentsSlice'
 
 const configKey = 'configuration'
 
@@ -175,7 +174,6 @@ export const updateAliasPiscine =
   (nameAlias: NameAlias): AppThunk =>
   (dispatch, _getState) => {
     dispatch(configurationSlice.actions.updateAliasPiscine(nameAlias))
-    dispatch(recomputeAdherentDerivedData)
     // dispatch(rebuildComitiDerivedData)
   }
 

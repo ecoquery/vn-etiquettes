@@ -1,26 +1,19 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { dymo, genereLabelContent } from '../../app/Dymo'
 import type { AppThunk, RootState } from '../../app/store'
-import { formatCreneaux } from '../../components/Etiquette'
-import { type Adherent, compareAdherents, nomSimple } from '../adherents/adherentsSlice'
-import type { Alias } from '../configuration/configurationSlice'
+import {
+  type AdherentDisplay,
+  buildAdherentDisplay,
+  compareAdherentDisplay
+} from '../../components/adherentDisplay'
 
 /**
  * Imprime l'étiquette d'un inscrit
  * @param adherent l'inscrit dont on veut imprimer l'étiquette
  * @param saison la saison courante
  */
-export const print = async (
-  adherent: Adherent,
-  saison: string,
-  piscineAlias: Record<string, Alias>,
-  printer: string
-) => {
-  const labelData = genereLabelContent(
-    nomSimple(adherent),
-    formatCreneaux(adherent.creneaux, piscineAlias),
-    saison
-  )
+export const print = async (adherent: AdherentDisplay, saison: string, printer: string) => {
+  const labelData = genereLabelContent(adherent.nom, adherent.creneaux.join('\n'), saison)
   await dymo.printLabel(printer, labelData)
 }
 
@@ -41,7 +34,7 @@ const printQueue = (saison) => async (dispatch, getState: () => RootState) => {
       if (getState().configuration.simulatePrint) {
         console.log(`Simule l'impression de `, adherent)
       } else {
-        await print(adherent, saison, getState().configuration.aliasPiscines, printer)
+        await print(adherent, saison, printer)
       }
       await new Promise((resolve) =>
         setTimeout(() => resolve(1), getState().configuration.printDelay * 1000)
@@ -71,9 +64,17 @@ export const makeInscritsToPrint = (
   const adherents = state.adherents.adherents
   const selectedAdherents = selectedAdherentNames
     .map((n) => adherents[n])
-    .toSorted(compareAdherents)
+    .map(
+      buildAdherentDisplay(
+        state.creneaux.creneaux,
+        state.creneaux.activites,
+        state.configuration.aliasPiscines
+      )
+    )
+    .toSorted(compareAdherentDisplay)
+
   const selIdx = selectedAdherents.findIndex(
-    (adh) => state.impression.displayedAdherent?.nom === adh.nom
+    (adh) => state.impression.displayedAdherent?.id === adh.id
   )
   const start = Math.max(selIdx, 0)
   const end = Math.min(start + nbToPrint, selectedAdherents.length)
@@ -100,10 +101,10 @@ export const printAll =
  */
 export interface ImpressionState {
   idxImpression: number
-  impressionQueue: Adherent[]
+  impressionQueue: AdherentDisplay[]
   stopImpression: boolean
-  toSelectAfterPrint?: Adherent
-  displayedAdherent?: Adherent
+  toSelectAfterPrint?: AdherentDisplay
+  displayedAdherent?: AdherentDisplay
 }
 
 /**
@@ -136,7 +137,7 @@ export const impressionSlice = createSlice({
     },
     setPrintQueue: (
       state,
-      action: PayloadAction<{ toPrint: Adherent[]; afterPrint: Adherent | undefined }>
+      action: PayloadAction<{ toPrint: AdherentDisplay[]; afterPrint: AdherentDisplay | undefined }>
     ) => {
       state.idxImpression = 0
       state.impressionQueue = action.payload.toPrint
@@ -145,7 +146,7 @@ export const impressionSlice = createSlice({
     setStopImpression: (state, action: PayloadAction<boolean>) => {
       state.stopImpression = action.payload
     },
-    setDisplayAdherent: (state, action: PayloadAction<Adherent | undefined>) => {
+    setDisplayAdherent: (state, action: PayloadAction<AdherentDisplay | undefined>) => {
       state.displayedAdherent = action.payload
     }
   }

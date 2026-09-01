@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material'
-import { ChangeEvent, useState } from 'react'
 import Papa from 'papaparse'
+import { type ChangeEvent, useState } from 'react'
 import * as XLSX from 'xlsx'
 
 interface SheetData {
@@ -8,10 +8,10 @@ interface SheetData {
 }
 
 const SheetReader = ({ onDataLoaded }: { onDataLoaded: (data: SheetData[]) => void }) => {
-  const [data, setData] = useState<SheetData[]>([])
+  // const [data, setData] = useState<SheetData[]>([])
   const [fileName, setFileName] = useState<string>('')
   const changeData = (data) => {
-    setData(data)
+    // setData(data)
     onDataLoaded(data)
   }
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +50,7 @@ const SheetReader = ({ onDataLoaded }: { onDataLoaded: (data: SheetData[]) => vo
   return (
     <Box sx={{ padding: 3 }}>
       <Button variant="contained" component="label" sx={{ marginBottom: 2 }}>
-        Importer (xlsx ou csv)
+        Importer (xlsx ou csv){' '}
         <input type="file" hidden accept=".xlsx, .xls, .csv" onChange={handleFileChange} />
       </Button>
 
