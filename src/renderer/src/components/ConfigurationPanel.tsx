@@ -1,5 +1,4 @@
 import {
-  Autocomplete,
   Button,
   Checkbox,
   Container,
@@ -33,7 +32,6 @@ import {
   updatePrintDelay,
   updateSimulatePrint
 } from '../features/configuration/configurationSlice'
-import { selectCategories, titreCourtCalcule } from '../features/inscrits/inscritsSlice'
 import { AliasEditor } from './AliasEditor'
 
 // From https://mui.com/material-ui/react-button/#file-upload
@@ -68,15 +66,9 @@ export const ConfigurationPanel = () => {
   const simulatePrint = useSelector(selectSimulatePrint)
   const aliasPiscines = useSelector(selectAliasPiscines)
   const aliasGroupes = useSelector(selectAliasGroupes)
-  const groupes = useSelector(selectCategories)
   const headersComiti = useSelector(selectHeadersComiti)
   const [inclureGroupeAuto, setInclureGroupeAuto] = useState(false)
-  const groupesAjoutables = groupes.filter(
-    (gr) =>
-      (inclureGroupeAuto || titreCourtCalcule(gr) === undefined) && aliasGroupes[gr] === undefined
-  )
   const emptyCfgFile = ''
-  const [groupeAAjouter, setGroupeAAjouter] = useState<string | null>(null)
 
   const handleImport = (event) => {
     if (event.target?.files[0]) {
@@ -117,6 +109,9 @@ export const ConfigurationPanel = () => {
           </Button>
           <Button variant="contained" onClick={handleExport}>
             Exporter
+          </Button>
+          <Button variant="contained" color="error">
+            Supprimer les adhérents
           </Button>
         </Stack>
       </Stack>
@@ -194,38 +189,6 @@ export const ConfigurationPanel = () => {
             </ListItem>
           ))}
         </List>
-        {groupesAjoutables.length > 0 ? (
-          <Stack direction="row" spacing={2}>
-            <Autocomplete
-              disablePortal
-              options={groupesAjoutables}
-              sx={{ width: 300 }}
-              value={groupeAAjouter}
-              onChange={(_event, value) => {
-                setGroupeAAjouter(value)
-              }}
-              renderInput={(params) => <TextField {...params} label="Groupe" />}
-            />
-            <Button
-              variant="contained"
-              onClick={() => {
-                if (groupeAAjouter) {
-                  dispatch(
-                    updateAliasGroupe({
-                      name: groupeAAjouter,
-                      alias: { ignore: true, replacement: '' }
-                    })
-                  )
-                  setGroupeAAjouter('')
-                }
-              }}
-            >
-              Ajouter
-            </Button>
-          </Stack>
-        ) : (
-          ''
-        )}
         <FormControlLabel
           control={
             <Checkbox

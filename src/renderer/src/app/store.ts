@@ -1,17 +1,17 @@
 import { configureStore, type Action, type ThunkAction } from '@reduxjs/toolkit'
-import inscritReducer from '../features/inscrits/inscritsSlice'
-import impressionReducer from '../features/impression/impressionSlice'
+import adherentsReducer from '../features/adherents/adherentsSlice'
 import configurationReducer from '../features/configuration/configurationSlice'
-import dymoReducer from '../features/dymo/dymoSlice'
 import creneauxReducer from '../features/creneaux/creneauxSlice'
+import dymoReducer from '../features/dymo/dymoSlice'
+import impressionReducer from '../features/impression/impressionSlice'
 
 export const store = configureStore({
   reducer: {
-    inscrits: inscritReducer,
     impression: impressionReducer,
     configuration: configurationReducer,
     dymo: dymoReducer,
-    creneaux: creneauxReducer
+    creneaux: creneauxReducer,
+    adherents: adherentsReducer
   },
   devTools: true
 })

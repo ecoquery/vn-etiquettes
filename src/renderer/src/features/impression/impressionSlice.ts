@@ -1,16 +1,26 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { compareInscrit, Inscrit, inscritSelected, inscritsFilter } from '../inscrits/inscritsSlice'
-import { genereLabelContent, dymo } from '../../app/Dymo'
-import { formatOffres } from '../../components/Etiquette'
-import { AppThunk, RootState } from '@renderer/app/store'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { dymo, genereLabelContent } from '../../app/Dymo'
+import type { AppThunk, RootState } from '../../app/store'
+import { formatCreneaux } from '../../components/Etiquette'
+import { type Adherent, compareAdherents, nomSimple } from '../adherents/adherentsSlice'
+import type { Alias } from '../configuration/configurationSlice'
 
 /**
  * Imprime l'étiquette d'un inscrit
- * @param inscrit l'inscrit dont on veut imprimer l'étiquette
+ * @param adherent l'inscrit dont on veut imprimer l'étiquette
  * @param saison la saison courante
  */
-export const print = async (inscrit: Inscrit, saison: string, printer: string) => {
-  const labelData = genereLabelContent(inscrit.nom, formatOffres(inscrit.offres), saison)
+export const print = async (
+  adherent: Adherent,
+  saison: string,
+  piscineAlias: Record<string, Alias>,
+  printer: string
+) => {
+  const labelData = genereLabelContent(
+    nomSimple(adherent),
+    formatCreneaux(adherent.creneaux, piscineAlias),
+    saison
+  )
   await dymo.printLabel(printer, labelData)
 }
 
@@ -21,24 +31,26 @@ export const print = async (inscrit: Inscrit, saison: string, printer: string) =
  */
 const printQueue = (saison) => async (dispatch, getState: () => RootState) => {
   if (getState().impression.stopImpression) {
-    dispatch(inscritSelected(getState().impression.toSelectAfterPrint))
+    dispatch(setDisplayAdherent(getState().impression.toSelectAfterPrint))
     dispatch(resetPrints())
   } else {
-    const inscrit = getState().impression.impressionQueue[getState().impression.idxImpression]
+    const adherent = getState().impression.impressionQueue[getState().impression.idxImpression]
     const printer = getState().dymo.defaultPrinter
-    if (inscrit !== undefined && printer !== undefined) {
-      dispatch(inscritSelected(inscrit))
+    if (adherent !== undefined && printer !== undefined) {
+      dispatch(setDisplayAdherent(adherent))
       if (getState().configuration.simulatePrint) {
-        console.log(`Simule l'impression de `, inscrit)
+        console.log(`Simule l'impression de `, adherent)
       } else {
-        await print(inscrit, saison, printer)
+        await print(adherent, saison, getState().configuration.aliasPiscines, printer)
       }
       await new Promise((resolve) =>
         setTimeout(() => resolve(1), getState().configuration.printDelay * 1000)
       )
       dispatch(nextPrint())
       dispatch(
-        inscritSelected(getState().impression.impressionQueue[getState().impression.idxImpression])
+        setDisplayAdherent(
+          getState().impression.impressionQueue[getState().impression.idxImpression]
+        )
       )
       dispatch(printQueue(saison))
     }
@@ -51,20 +63,21 @@ const printQueue = (saison) => async (dispatch, getState: () => RootState) => {
  * @param nbToPrint le nombre d'impressions à effectuer
  * @returns le tableau des inscrits à imprimer
  */
-export const makeInscritsToPrint = (state: RootState, nbToPrint: number) => {
-  const inscrits = Object.values(state.inscrits.inscrits)
-    .filter(
-      inscritsFilter(
-        state.inscrits.selectedOffre,
-        state.inscrits.selectedActivite,
-        state.inscrits.selectedInscritApres
-      )
-    )
-    .toSorted(compareInscrit(state.inscrits.sortModel))
-  const selIdx = inscrits.findIndex((inscr) => state.inscrits.selected?.nComiti === inscr.nComiti)
+export const makeInscritsToPrint = (
+  state: RootState,
+  selectedAdherentNames: string[],
+  nbToPrint: number
+) => {
+  const adherents = state.adherents.adherents
+  const selectedAdherents = selectedAdherentNames
+    .map((n) => adherents[n])
+    .toSorted(compareAdherents)
+  const selIdx = selectedAdherents.findIndex(
+    (adh) => state.impression.displayedAdherent?.nom === adh.nom
+  )
   const start = Math.max(selIdx, 0)
-  const end = Math.min(start + nbToPrint, inscrits.length)
-  return { toPrint: inscrits.slice(start, end), afterPrint: inscrits[end] }
+  const end = Math.min(start + nbToPrint, selectedAdherents.length)
+  return { toPrint: selectedAdherents.slice(start, end), afterPrint: selectedAdherents[end] }
 }
 
 /**
@@ -74,9 +87,9 @@ export const makeInscritsToPrint = (state: RootState, nbToPrint: number) => {
  * @returns la fonction thunk qui va déclencher l'impression
  */
 export const printAll =
-  (saison: string, nbToPrint: number): AppThunk =>
+  (saison: string, selectedAdherents: string[], nbToPrint: number): AppThunk =>
   async (dispatch, getState) => {
-    const inscritsToPrint = makeInscritsToPrint(getState(), nbToPrint)
+    const inscritsToPrint = makeInscritsToPrint(getState(), selectedAdherents, nbToPrint)
     dispatch(setPrintQueue(inscritsToPrint))
     dispatch(setStopImpression(false))
     dispatch(printQueue(saison))
@@ -87,9 +100,10 @@ export const printAll =
  */
 export interface ImpressionState {
   idxImpression: number
-  impressionQueue: Inscrit[]
+  impressionQueue: Adherent[]
   stopImpression: boolean
-  toSelectAfterPrint?: Inscrit
+  toSelectAfterPrint?: Adherent
+  displayedAdherent?: Adherent
 }
 
 /**
@@ -122,7 +136,7 @@ export const impressionSlice = createSlice({
     },
     setPrintQueue: (
       state,
-      action: PayloadAction<{ toPrint: Inscrit[]; afterPrint: Inscrit | undefined }>
+      action: PayloadAction<{ toPrint: Adherent[]; afterPrint: Adherent | undefined }>
     ) => {
       state.idxImpression = 0
       state.impressionQueue = action.payload.toPrint
@@ -130,12 +144,17 @@ export const impressionSlice = createSlice({
     },
     setStopImpression: (state, action: PayloadAction<boolean>) => {
       state.stopImpression = action.payload
+    },
+    setDisplayAdherent: (state, action: PayloadAction<Adherent | undefined>) => {
+      state.displayedAdherent = action.payload
     }
   }
 })
 
-export const { nextPrint, resetPrints, setPrintQueue, setStopImpression } = impressionSlice.actions
+export const { nextPrint, resetPrints, setPrintQueue, setStopImpression, setDisplayAdherent } =
+  impressionSlice.actions
 export default impressionSlice.reducer
 export const selectIdxImpression = (state: RootState) => state.impression.idxImpression
 export const selectImpressionQueue = (state: RootState) => state.impression.impressionQueue
 export const selectStopImpression = (state: RootState) => state.impression.stopImpression
+export const selectDisplayedAdherent = (state: RootState) => state.impression.displayedAdherent

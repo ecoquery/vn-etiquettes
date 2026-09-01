@@ -3,24 +3,23 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
 import { selectAnnee } from '../features/configuration/configurationSlice'
-import { printAll } from '../features/impression/impressionSlice'
-import { selectSelected } from '../features/inscrits/inscritsSlice'
+import { printAll, selectDisplayedAdherent } from '../features/impression/impressionSlice'
 import Etiquette from './Etiquette'
 
-export const GestionImpression = () => {
+export const GestionImpression = ({ selectedAdherents }: { selectedAdherents: string[] }) => {
   const dispatch: AppDispatch = useDispatch()
-  const selectedInscrit = useSelector(selectSelected)
+  const displayedAdherent = useSelector(selectDisplayedAdherent)
   const [nbPrint, setNbPrint] = useState(1)
   const saison = useSelector(selectAnnee)
   return (
     <Stack alignItems="center" alignContent={'center'} spacing={2}>
       <Paper>
-        <Etiquette inscrit={selectedInscrit} saison={saison} />
+        <Etiquette adherent={displayedAdherent} saison={saison} />
       </Paper>
       <Button
         variant="contained"
         onClick={() => {
-          dispatch(printAll(saison, 1))
+          dispatch(printAll(saison, selectedAdherents, 1))
         }}
       >
         Imprimer cette étiquette
@@ -39,7 +38,7 @@ export const GestionImpression = () => {
         <Button
           variant="contained"
           onClick={() => {
-            dispatch(printAll(saison, nbPrint))
+            dispatch(printAll(saison, selectedAdherents, nbPrint))
           }}
         >
           Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}

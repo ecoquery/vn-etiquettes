@@ -8,12 +8,14 @@ import { store } from './app/store'
 import { loadConfiguration } from './features/configuration/configurationSlice'
 import { updatePrinters } from './features/dymo/dymoSlice'
 import { loadCreneaux } from './features/creneaux/creneauxSlice'
+import { loadAdherents } from './features/adherents/adherentsSlice'
 
 // Load DYMO js lib before building react app
 async function run() {
   try {
     store.dispatch(loadConfiguration)
     store.dispatch(loadCreneaux)
+    store.dispatch(loadAdherents)
     store.dispatch(updatePrinters)
 
     ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import type { AppDispatch, AppThunk, RootState } from '@renderer/app/store'
-import { ConfigState, HeadersMonClub } from '../configuration/configurationSlice'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { AppDispatch, AppThunk, RootState } from '../../app/store'
+import type { ConfigState, HeadersMonClub } from '../configuration/configurationSlice'
 
 /** Clé avec laquelle les données sont stockées dans le localStorage de
  * l'application. */
@@ -28,6 +28,10 @@ function activiteFromLine(
   return { nom, sanscarte: prevAct?.sanscarte || false, sansseance: prevAct?.sansseance || false }
 }
 
+export function compareActivite(a1: Activite, a2: Activite): number {
+  return a1.nom.localeCompare(a2.nom)
+}
+
 /** Un créneau est une session (parfois juste une catégorie comme dans le cas
  * des compétiteurs). Il est rattaché à une activité. */
 export interface Creneau {
@@ -37,6 +41,10 @@ export interface Creneau {
   fin?: string
   lieu?: string
   jour?: string
+}
+
+function shortDay(d: Date) {
+  return d.toLocaleDateString('fr-FR', { weekday: 'short' })
 }
 
 /**
@@ -51,17 +59,13 @@ function jourFromDate(dateS: string): string | undefined {
   const date = new Date(year, month - 1, day)
 
   // Vérifier si la date est valide
-  if (isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     console.log('Format de date invalide. Utilisez jj/mm/aaaa.', dateS)
     return undefined
   }
 
-  // Utiliser Intl.DateTimeFormat pour obtenir le jour en français
-  //const fullDay = date.toLocaleDateString('fr-FR', { weekday: 'long' });
-  const shortDay = date.toLocaleDateString('fr-FR', { weekday: 'short' })
-
   // Retourner le résultat
-  return shortDay
+  return shortDay(date)
 }
 
 /**
@@ -96,6 +100,32 @@ function creneauFromLine(
   const debut = data[h.cHeureDebut]
   const lieu = piscineFromAdresse(data[h.cAdresse], config)
   return { nom, activite, jour, debut, lieu }
+}
+
+const jours: (string | undefined)[] = new Array(7).fill(1).map((_, i) => {
+  return shortDay(new Date(2026, 8, 7 + i))
+})
+const compareJours = (j1: string | undefined, j2: string | undefined) => {
+  return jours.indexOf(j1) - jours.indexOf(j2)
+}
+
+/**
+ * Comparateur de créneaux
+ * @param c1 premier créneau
+ * @param c2 deuxième créneau
+ * @returns un nombre négatif si le premier créneau est avant le second, positif
+ * s'il est après, 0 s'ils sont égaux
+ */
+export function compareCreneaux(c1: Creneau, c2: Creneau): number {
+  const aCmp = compareActivite(c1.activite, c2.activite)
+  if (aCmp !== 0) return aCmp
+  const jCmp = compareJours(c1.jour, c2.jour)
+  if (jCmp !== 0) return jCmp
+  if (c1.debut === undefined) return c2.debut === undefined ? 0 : -1
+  const dCmp = c1.debut.localeCompare(c2.debut ?? '')
+  if (dCmp !== 0) return dCmp
+  if (c1.lieu === undefined) return c2.lieu === undefined ? 0 : -1
+  return c1.lieu.localeCompare(c2.lieu ?? '')
 }
 
 /**
@@ -183,7 +213,11 @@ export const importCreneauxWithData =
     const hd = config.headersMonClub
     for (const row of rows) {
       const nomCreneau = row[hd.cNomCreneau]
-      const nomActivite = row[hd.cNomActivite]
+      const nomActivite = row[hd.cNomActivite] || ''
+      if (!nomActivite) {
+        console.log(`Pas de nom d'activité pour '${nomCreneau}'`)
+        continue
+      }
       if (!(nomActivite in activites)) {
         activites[nomActivite] = activiteFromLine(row, previousActivites[nomActivite], hd)
       }

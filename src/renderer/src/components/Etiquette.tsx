@@ -3,33 +3,35 @@ import type { JSX } from 'react'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { dymo, genereLabelContent } from '../app/Dymo'
+import { nomSimple, type Adherent } from '../features/adherents/adherentsSlice'
+import type { Alias } from '../features/configuration/configurationSlice'
+import { selectAliasPiscines } from '../features/configuration/configurationSlice'
+import type { Creneau } from '../features/creneaux/creneauxSlice'
 import { selectDefaultPrinter } from '../features/dymo/dymoSlice'
-import type { Inscrit, Offre } from '../features/inscrits/inscritsSlice'
 
 interface EtiquetteProps {
-  inscrit?: Inscrit
+  adherent?: Adherent
   saison: string
 }
 
-function formatCreneaux(creneaux: Array<{ lieu: string; heure: string }>) {
-  return creneaux.map((cr) => `${cr.lieu} - ${cr.heure}`).join(', ')
+export function formatCreneaux(cr: Record<string, Creneau>, piscineAlias: Record<string, Alias>) {
+  const creneaux = Object.values(cr)
+  const activitesSansSeances = new Set(
+    creneaux
+      .filter((c) => c.activite.sansseance && !c.activite.sanscarte)
+      .map((c) => c.activite.nom)
+  )
+  const creneauxAAfficher = creneaux
+    .filter((c) => !(c.activite.nom in activitesSansSeances) && !c.activite.sanscarte)
+    .map((c) => `${c.jour} ${c.debut} - ${piscineAlias[c.lieu ?? ''].replacement ?? c.lieu}`)
+  return Array.from(activitesSansSeances).concat(creneauxAAfficher).join('\n')
 }
 
-function formatOffre(o: Offre) {
-  if (o.creneaux.length > 2) {
-    return o.titreCourt
-  } else {
-    return `${o.titreCourt} - ${formatCreneaux(o.creneaux)}`
-  }
-}
-
-export function formatOffres(offres: Array<Offre>) {
-  return offres.map(formatOffre).join('\n')
-}
-
-function Etiquette({ inscrit, saison }: Readonly<EtiquetteProps>): JSX.Element {
-  const nom = inscrit?.nom ?? ''
-  const labelData = genereLabelContent(nom, formatOffres(inscrit?.offres ?? []), saison)
+function Etiquette({ adherent, saison }: Readonly<EtiquetteProps>): JSX.Element {
+  const aliasPiscine = useSelector(selectAliasPiscines)
+  const nom = adherent ? nomSimple(adherent) : ''
+  const creneauxString = formatCreneaux(adherent?.creneaux ?? {}, aliasPiscine)
+  const labelData = genereLabelContent(nom, creneauxString, saison)
   const printer = useSelector(selectDefaultPrinter)
   const [labelContent, setLabelContent] = useState<string | undefined>(undefined)
 
@@ -58,7 +60,7 @@ function Etiquette({ inscrit, saison }: Readonly<EtiquetteProps>): JSX.Element {
   } else {
     return (
       <img
-        alt={`Étiquette ${saison} pour ${nom} avec les créneaux ${formatOffres(inscrit?.offres ?? [])}`}
+        alt={`Étiquette ${saison} pour ${nom} avec les créneaux ${formatCreneaux(adherent?.creneaux ?? {}, aliasPiscine)}`}
         src={labelContent}
       />
     )

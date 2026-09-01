@@ -1,6 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { AppThunk, RootState } from '@renderer/app/store'
-import { rebuildComitiDerivedData } from '../inscrits/inscritsSlice'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { AppThunk, RootState } from '@renderer/app/store'
 
 const configKey = 'configuration'
 
@@ -45,7 +44,8 @@ export const defaultHeadersMonClub = {
   cNomActivite: 'Nom',
   cDateDebut: 'Date de début du créneau',
   cHeureDebut: 'Heure',
-  cAdresse: 'Adresse'
+  cAdresse: 'Adresse',
+  cNomAdherent: 'Adhérents'
 }
 
 /** Nom des colonnes dans le fichiers d'import des créneaux */
@@ -174,21 +174,21 @@ export const updateAliasPiscine =
   (nameAlias: NameAlias): AppThunk =>
   (dispatch, _getState) => {
     dispatch(configurationSlice.actions.updateAliasPiscine(nameAlias))
-    dispatch(rebuildComitiDerivedData)
+    // dispatch(rebuildComitiDerivedData)
   }
 
 export const updateAliasGroupe =
   (nameAlias: NameAlias): AppThunk =>
   (dispatch, _getState) => {
     dispatch(configurationSlice.actions.updateAliasGroupe(nameAlias))
-    dispatch(rebuildComitiDerivedData)
+    // dispatch(rebuildComitiDerivedData)
   }
 
 export const updateHeader =
   (header: string, value: string): AppThunk =>
   (dispatch, _getState) => {
     dispatch(configurationSlice.actions.updateHeader({ header, value }))
-    dispatch(rebuildComitiDerivedData)
+    // dispatch(rebuildComitiDerivedData)
   }
 
 export const { updateAnnee, updatePrintDelay, updateSimulatePrint } = configurationSlice.actions

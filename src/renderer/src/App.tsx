@@ -1,13 +1,11 @@
-import { AppBar, Box, Button, Container, Grid, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Button, Container, Toolbar, Typography } from '@mui/material'
 import type { JSX } from 'react'
 import { useState } from 'react'
-import { ComitiFileHandler } from './components/ComitiFileHandler'
+import ActivitePanel from './components/ActivitePanel'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
 import { CreneauxPanel } from './components/CreneauxPanel'
-import { GestionImpression } from './components/GestionImpression'
-import { GestionInscrits } from './components/GestionInscrits'
+import GestionAdherents from './components/GestionAdherents'
 import Versions from './components/Versions'
-import ActivitePanel from './components/ActivitePanel'
 
 function App(): JSX.Element {
   const navItems = ['impression', 'creneaux', 'activites', 'configuration']
@@ -18,15 +16,7 @@ function App(): JSX.Element {
       case 'impression':
         return (
           <Container style={{ paddingTop: '40px' }}>
-            <Grid container spacing={2}>
-              <Grid size={8}>
-                <GestionInscrits />
-              </Grid>
-              <Grid size={4}>
-                <GestionImpression />
-              </Grid>
-            </Grid>
-            <ComitiFileHandler />
+            <GestionAdherents />
           </Container>
         )
       case 'creneaux':
