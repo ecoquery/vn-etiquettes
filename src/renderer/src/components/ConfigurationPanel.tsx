@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Checkbox,
   Container,
@@ -7,6 +8,7 @@ import {
   ListItem,
   Stack,
   TextField,
+  Toolbar,
   Typography
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
@@ -69,6 +71,8 @@ export const ConfigurationPanel = () => {
   const headersComiti = useSelector(selectHeadersComiti)
   const [inclureGroupeAuto, setInclureGroupeAuto] = useState(false)
   const emptyCfgFile = ''
+  const tabs = ['Général', 'Piscines', 'Entêtes']
+  const [curTab, setCurTab] = useState(tabs[0])
 
   const handleImport = (event) => {
     if (event.target?.files[0]) {
@@ -83,8 +87,162 @@ export const ConfigurationPanel = () => {
     dispatch(exportConfiguration(fileHandle))
   }
 
+  const general = () => (
+    <>
+      {/* <Typography variant="h5">Général</Typography> */}
+      <Stack alignItems={'normal'} spacing={2}>
+        <TextField
+          label="Année"
+          value={annee}
+          onChange={(event) => {
+            dispatch(updateAnnee(event.target.value))
+          }}
+        />
+        <TextField
+          label="Attente (en s) entre deux impressions"
+          type="number"
+          value={printDelay}
+          onChange={(event) => {
+            dispatch(updatePrintDelay(Number(event.target.value)))
+          }}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              defaultChecked={simulatePrint}
+              onChange={(event) => {
+                dispatch(updateSimulatePrint(event.target.checked))
+              }}
+            />
+          }
+          label="Simuler l'impression"
+        />
+      </Stack>
+    </>
+  )
+
+  function piscines() {
+    return (
+      <>
+        {/*
+        Section piscines
+        */}
+        {/* <Typography variant="h5">Piscines</Typography> */}
+        <List>
+          {Object.keys(aliasPiscines).map((p) => (
+            <ListItem key={p}>
+              <AliasEditor
+                name={p}
+                value={aliasPiscines[p]}
+                onChange={(name, alias) => {
+                  dispatch(updateAliasPiscine({ name, alias }))
+                }}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </>
+    )
+  }
+
+  function groupes() {
+    return (
+      <>
+        {/*
+        Section groupes
+         */}
+        {/* <Typography variant="h5">Groupes</Typography> */}
+        <List>
+          {Object.keys(aliasGroupes).map((g) => (
+            <ListItem key={g}>
+              <AliasEditor
+                name={g}
+                value={aliasGroupes[g]}
+                onChange={(name, alias) => {
+                  dispatch(updateAliasGroupe({ name, alias }))
+                }}
+                deletable
+              />
+            </ListItem>
+          ))}
+        </List>
+        <FormControlLabel
+          control={
+            <Checkbox
+              value={inclureGroupeAuto}
+              onChange={(_event, checked) => {
+                setInclureGroupeAuto(checked)
+              }}
+            />
+          }
+          label="Voir les groupes gérés automatiquement"
+        />
+      </>
+    )
+  }
+  function entetes() {
+    return (
+      <>
+        {/*
+          Section entêtes
+          */}
+        {/* <Typography variant="h5">Entêtes</Typography> */}
+        <List>
+          {Object.keys(headersComiti).map((h) => (
+            <ListItem key={h}>
+              <TextField
+                label={defaultHeadersComiti[h]}
+                value={headersComiti[h]}
+                onChange={(event) => {
+                  dispatch(updateHeader(h, event.target.value))
+                }}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </>
+    )
+  }
+  function tabContent(entry) {
+    switch (entry) {
+      case 'Général':
+        return general()
+      case 'Piscines':
+        return piscines()
+      case 'Entêtes':
+        return entetes()
+      default:
+        return <></>
+    }
+  }
+
   return (
     <Container>
+      <Toolbar
+        sx={{
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      >
+        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+          {tabs.map((entry) => (
+            <Button
+              key={entry}
+              onClick={() => setCurTab(entry)}
+              variant={entry === curTab ? 'outlined' : 'text'}
+            >
+              {entry}
+            </Button>
+          ))}
+        </Box>
+      </Toolbar>
+      <Stack
+        alignItems={'center'}
+        spacing={2}
+        style={{ height: 500, maxHeight: 650, overflow: 'scroll', marginTop: 20 }}
+      >
+        {tabContent(curTab)}
+      </Stack>
       <Stack alignItems="center" spacing={2}>
         <Stack direction={'row'} spacing={2}>
           <Button
@@ -114,110 +272,6 @@ export const ConfigurationPanel = () => {
             Supprimer les adhérents
           </Button>
         </Stack>
-      </Stack>
-      <Stack
-        alignItems={'center'}
-        spacing={2}
-        style={{ maxHeight: 600, overflow: 'scroll', marginTop: 20 }}
-      >
-        {/*
-        Section général
-        */}
-        <Typography variant="h5">Général</Typography>
-        <Stack alignItems={'normal'} spacing={2}>
-          <TextField
-            label="Année"
-            value={annee}
-            onChange={(event) => {
-              dispatch(updateAnnee(event.target.value))
-            }}
-          />
-          <TextField
-            label="Attente (en s) entre deux impressions"
-            type="number"
-            value={printDelay}
-            onChange={(event) => {
-              dispatch(updatePrintDelay(Number(event.target.value)))
-            }}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                defaultChecked={simulatePrint}
-                onChange={(event) => {
-                  dispatch(updateSimulatePrint(event.target.checked))
-                }}
-              />
-            }
-            label="Simuler l'impression"
-          />
-        </Stack>
-
-        {/*
-        Section piscines
-        */}
-        <Typography variant="h5">Piscines</Typography>
-        <List>
-          {Object.keys(aliasPiscines).map((p) => (
-            <ListItem key={p}>
-              <AliasEditor
-                name={p}
-                value={aliasPiscines[p]}
-                onChange={(name, alias) => {
-                  dispatch(updateAliasPiscine({ name, alias }))
-                }}
-              />
-            </ListItem>
-          ))}
-        </List>
-
-        {/*
-        Section groupes
-         */}
-        <Typography variant="h5">Groupes</Typography>
-        <List>
-          {Object.keys(aliasGroupes).map((g) => (
-            <ListItem key={g}>
-              <AliasEditor
-                name={g}
-                value={aliasGroupes[g]}
-                onChange={(name, alias) => {
-                  dispatch(updateAliasGroupe({ name, alias }))
-                }}
-                deletable
-              />
-            </ListItem>
-          ))}
-        </List>
-        <FormControlLabel
-          control={
-            <Checkbox
-              value={inclureGroupeAuto}
-              onChange={(_event, checked) => {
-                setInclureGroupeAuto(checked)
-              }}
-            />
-          }
-          label="Voir les groupes gérés automatiquement"
-        />
-
-        {/*
-          Section entêtes
-          */}
-        <Typography variant="h5">Entêtes</Typography>
-        <List>
-          {Object.keys(headersComiti).map((h) => (
-            <ListItem key={h}>
-              <TextField
-                label={defaultHeadersComiti[h]}
-                value={headersComiti[h]}
-                onChange={(event) => {
-                  dispatch(updateHeader(h, event.target.value))
-                }}
-              />
-            </ListItem>
-          ))}
-        </List>
       </Stack>
     </Container>
   )

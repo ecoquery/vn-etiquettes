@@ -11,7 +11,8 @@ import TableauAdherents from './TableauAdherents'
 const GestionAdherents = () => {
   const dispatch: AppDispatch = useDispatch()
   const adherents = useSelector(selectAdherents)
-  const [selectedAdherents, setSelectedAdherents] = useState(Object.keys(adherents))
+  const adherentsVisibles = Object.values(adherents).filter((a) => a.premierCreneau !== undefined)
+  const [selectedAdherents, setSelectedAdherents] = useState(adherentsVisibles.map((a) => a.nom))
   return (
     <Grid container spacing={2}>
       <Grid size={8}>

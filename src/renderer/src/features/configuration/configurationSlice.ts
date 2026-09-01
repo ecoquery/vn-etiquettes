@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AppThunk, RootState } from '@renderer/app/store'
+import { recomputeAdherentDerivedData } from '../adherents/adherentsSlice'
 
 const configKey = 'configuration'
 
@@ -86,8 +87,8 @@ const initialState: ConfigState = {
   aliasPiscines: {
     'Centre Nautique Etienne Gagnaire': aReplace('CNEG'),
     'Piscine André Boulloche': aReplace('Boulloche'),
-    'Piscine des Gratte Ciel': aIgnore(),
-    Compétition: aReplace('Compétition')
+    'Piscine des Gratte Ciel': aIgnore()
+    // Compétition: aReplace('Compétition')
   },
   adressePiscine: {
     '59 avenue Marcel Cerdan, 69100, Villeurbanne': 'Centre Nautique Etienne Gagnaire',
@@ -174,6 +175,7 @@ export const updateAliasPiscine =
   (nameAlias: NameAlias): AppThunk =>
   (dispatch, _getState) => {
     dispatch(configurationSlice.actions.updateAliasPiscine(nameAlias))
+    dispatch(recomputeAdherentDerivedData)
     // dispatch(rebuildComitiDerivedData)
   }
 

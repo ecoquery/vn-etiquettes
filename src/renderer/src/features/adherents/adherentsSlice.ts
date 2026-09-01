@@ -1,7 +1,7 @@
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { createSlice } from '@reduxjs/toolkit'
 import type { AppDispatch, AppThunk, RootState } from '../../app/store'
-import type { ConfigState } from '../configuration/configurationSlice'
+import type { Alias, ConfigState } from '../configuration/configurationSlice'
 import type { Creneau } from '../creneaux/creneauxSlice'
 import { compareCreneaux } from '../creneaux/creneauxSlice'
 
@@ -82,6 +82,17 @@ export const adherentsSlice = createSlice({
       } else {
         console.log("Erreur, l'adhérent n'a pas été trouvé: ", nom)
       }
+    },
+    setPremierCreneau: (
+      state,
+      action: PayloadAction<{ nom: string; premierCreneau: Creneau | undefined }>
+    ) => {
+      const nom = action.payload.nom
+      if (nom in state.adherents) {
+        state.adherents[nom].premierCreneau = action.payload.premierCreneau
+      } else {
+        console.log("Erreur, l'adhérent n'a pas été trouvé: ", nom)
+      }
     }
   }
 })
@@ -117,6 +128,16 @@ export const viderAdherents: AppThunk = (dispatch, _getState) => {
   dispatch(saveAdherents)
 }
 
+const creneauAfficheable = (aliasPiscines: Record<string, Alias>) => (c: Creneau) =>
+  !aliasPiscines[c.lieu ?? '']?.ignore
+
+function getPremierCreneau(
+  cr: Record<string, Creneau>,
+  aliasPiscines: Record<string, Alias>
+): Creneau | undefined {
+  return Object.values(cr).filter(creneauAfficheable(aliasPiscines)).toSorted(compareCreneaux)[0]
+}
+
 /**
  * Construit un adhérent à partir des données d'une ligne
  * @param row la ligne du fichier d'import
@@ -137,9 +158,23 @@ function adherentOfLigne(
       creneaux[c] = cr[c]
     }
   }
+  const premierCreneau = getPremierCreneau(creneaux, config.aliasPiscines)
   const statut: Statut = 'jamais'
-  const premierCreneau = Object.values(creneaux).toSorted(compareCreneaux)[0]
   return { nom, creneaux, statut, premierCreneau }
+}
+
+/**
+ * Reconstruit les données calculées chez les adhérents, i.e.
+ * - le premier créneau
+ */
+export const recomputeAdherentDerivedData = (dispatch: AppDispatch, getState: () => RootState) => {
+  console.log('recompteAdherentData triggered')
+  const adherents = getState().adherents.adherents
+  const aliasPiscines = getState().configuration.aliasPiscines
+  for (const adherent of Object.values(adherents)) {
+    dispatch(setPremierCreneau({nom:adherent.nom, premierCreneau:getPremierCreneau(adherent.creneaux,aliasPiscines)}))
+  }
+  dispatch(saveAdherents)
 }
 
 /**
@@ -167,7 +202,7 @@ export const importAdherentsWithData =
 
 export default adherentsSlice.reducer
 
-export const { setStatut } = adherentsSlice.actions
+export const { setStatut, setPremierCreneau } = adherentsSlice.actions
 
 // Selector functions allows us to select a value from the Redux root state.
 // Selectors can also be defined inline in the `useSelector` call
