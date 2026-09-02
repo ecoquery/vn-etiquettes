@@ -62,7 +62,7 @@ const TableauAdherents = ({ selectedAdherents }: { selectedAdherents: string[] }
   const rowSelectionChanged = (newRowSelectionModel: GridRowSelectionModel) => {
     const nom = newRowSelectionModel.ids.values().next().value
     const adherent = adherents[nom ?? '']
-    console.log('new selection: ', adherent, ' from ', nom)
+    // console.log('new selection: ', adherent, ' from ', nom)
     dispatch(
       setDisplayAdherent(
         adherent ? buildAdherentDisplay(creneaux, activites, aliasPiscines)(adherent) : undefined

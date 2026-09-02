@@ -1,10 +1,11 @@
-import { Button, Paper, Stack, TextField } from '@mui/material'
+import { Button, Divider, Paper, Stack, TextField } from '@mui/material'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
 import { selectAnnee } from '../features/configuration/configurationSlice'
 import { printAll, selectDisplayedAdherent } from '../features/impression/impressionSlice'
 import Etiquette from './Etiquette'
+import EtiquettePersonnalisee from './EtiquettePersonnalisee'
 
 export const GestionImpression = ({ selectedAdherents }: { selectedAdherents: string[] }) => {
   const dispatch: AppDispatch = useDispatch()
@@ -44,8 +45,9 @@ export const GestionImpression = ({ selectedAdherents }: { selectedAdherents: st
           Imprimer {nbPrint} étiquette{nbPrint > 1 ? 's' : ''}
         </Button>
       </Stack>
-
+      <Divider variant="fullWidth" flexItem />
       <Stack direction="row" alignContent="left" spacing={2} width={'100%'}></Stack>
+      <EtiquettePersonnalisee />
     </Stack>
   )
 }
