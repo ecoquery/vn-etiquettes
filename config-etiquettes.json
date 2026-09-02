@@ -1,5 +1,5 @@
 {
-  "annee": "2025-2026",
+  "annee": "2026-2027",
   "printDelay": 2,
   "simulatePrint": true,
   "aliasGroupes": {
@@ -31,6 +31,10 @@
       "ignore": false,
       "replacement": "Juniors"
     },
+    "Benjamins": {
+      "ignore": false,
+      "replacement": "Benjamins"
+    },
     "Promotionnel": {
       "ignore": true,
       "replacement": ""
@@ -38,10 +42,6 @@
     "Officiel": {
       "ignore": true,
       "replacement": ""
-    },
-    "Benjamins": {
-      "ignore": false,
-      "replacement": "Benjamins"
     }
   },
   "aliasPiscines": {
@@ -56,12 +56,30 @@
     "Piscine des Gratte Ciel": {
       "ignore": true,
       "replacement": ""
-    },
-    "Compétition": {
-      "ignore": false,
-      "replacement": "Compétition"
     }
   },
+  "adressePiscine": {
+    "59 avenue Marcel Cerdan, 69100, Villeurbanne": "Centre Nautique Etienne Gagnaire",
+    "96 rue Francis De Pressensé, 69100, Villeurbanne": "Piscine André Boulloche",
+    "Place Lazare Goujon, 69100, Villeurbanne": "Piscine des Gratte Ciel",
+    "Place Lazar Goujon, 69100, Villeurbanne": "Piscine des Gratte Ciel"
+  },
+  "headersMonClub": {
+    "cNomCreneau": "Nom du créneau",
+    "cNomActivite": "Nom",
+    "cDateDebut": "Date de début du créneau",
+    "cHeureDebut": "Heure",
+    "cAdresse": "Adresse",
+    "cNomAdherent": "Adhérents"
+  },
+  "sansSceance": [
+    "Compétition Licence Maîtres",
+    "Encadrants - Coachs",
+    "Officiels - bénévoles"
+  ],
+  "sansCarte": [
+    "Officiels - bénévoles"
+  ],
   "headersComiti": {
     "cNumeroOffre": "Numéro offre",
     "cCategorie": "Catégorie",

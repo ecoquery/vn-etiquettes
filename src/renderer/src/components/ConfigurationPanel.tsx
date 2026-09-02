@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
 import {
-  defaultHeadersComiti,
+  defaultHeadersMonClub,
   exportConfiguration,
   importConfiguration,
   loadConfiguration,
@@ -23,7 +23,7 @@ import {
   selectAliasGroupes,
   selectAliasPiscines,
   selectAnnee,
-  selectHeadersComiti,
+  selectHeadersMonClub,
   selectPrintDelay,
   selectSimulatePrint,
   updateAliasGroupe,
@@ -67,7 +67,7 @@ export const ConfigurationPanel = () => {
   const simulatePrint = useSelector(selectSimulatePrint)
   const aliasPiscines = useSelector(selectAliasPiscines)
   const aliasGroupes = useSelector(selectAliasGroupes)
-  const headersComiti = useSelector(selectHeadersComiti)
+  const headersMonClub = useSelector(selectHeadersMonClub)
   const [inclureGroupeAuto, setInclureGroupeAuto] = useState(false)
   const emptyCfgFile = ''
   const tabs = ['Général', 'Piscines', 'Entêtes']
@@ -187,11 +187,11 @@ export const ConfigurationPanel = () => {
           */}
         {/* <Typography variant="h5">Entêtes</Typography> */}
         <List>
-          {Object.keys(headersComiti).map((h) => (
+          {Object.keys(headersMonClub).map((h) => (
             <ListItem key={h}>
               <TextField
-                label={defaultHeadersComiti[h]}
-                value={headersComiti[h]}
+                label={defaultHeadersMonClub[h]}
+                value={headersMonClub[h]}
                 onChange={(event) => {
                   dispatch(updateHeader(h, event.target.value))
                 }}

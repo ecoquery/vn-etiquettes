@@ -16,27 +16,27 @@ export interface NameAlias {
   alias: Alias | undefined
 }
 
-export interface HeadersComiti {
-  cNumeroOffre: string
-  cCategorie: string
-  cLieuxHoraires: string
-  cActivite: string
-  cNumeroComiti: string
-  cNom: string
-  cPrenom: string
-  cDateInscription: string
-}
+// export interface HeadersComiti {
+//   cNumeroOffre: string
+//   cCategorie: string
+//   cLieuxHoraires: string
+//   cActivite: string
+//   cNumeroComiti: string
+//   cNom: string
+//   cPrenom: string
+//   cDateInscription: string
+// }
 
-export const defaultHeadersComiti: HeadersComiti = {
-  cNumeroOffre: 'Numéro offre',
-  cCategorie: 'Catégorie',
-  cLieuxHoraires: 'Lieux et horaires',
-  cActivite: 'Nom spécifique activité',
-  cNumeroComiti: 'Numéro Comiti',
-  cNom: 'Nom',
-  cPrenom: 'Prénom',
-  cDateInscription: "Date d'inscription"
-}
+// export const defaultHeadersComiti: HeadersComiti = {
+//   cNumeroOffre: 'Numéro offre',
+//   cCategorie: 'Catégorie',
+//   cLieuxHoraires: 'Lieux et horaires',
+//   cActivite: 'Nom spécifique activité',
+//   cNumeroComiti: 'Numéro Comiti',
+//   cNom: 'Nom',
+//   cPrenom: 'Prénom',
+//   cDateInscription: "Date d'inscription"
+// }
 
 /** Valeur par défaut des colonnes du fichier d'import de créneau de MonClub */
 export const defaultHeadersMonClub = {
@@ -58,7 +58,7 @@ export interface ConfigState {
   aliasGroupes: Record<string, Alias>
   aliasPiscines: Record<string, Alias>
   adressePiscine: Record<string, string>
-  headersComiti: HeadersComiti
+  // headersComiti: HeadersComiti
   headersMonClub: HeadersMonClub
   sansSceance: Array<string>
   sansCarte: Array<string>
@@ -95,7 +95,7 @@ const initialState: ConfigState = {
     'Place Lazare Goujon, 69100, Villeurbanne': 'Piscine des Gratte Ciel',
     'Place Lazar Goujon, 69100, Villeurbanne': 'Piscine des Gratte Ciel'
   },
-  headersComiti: { ...defaultHeadersComiti },
+  // headersComiti: { ...defaultHeadersComiti },
   headersMonClub: { ...defaultHeadersMonClub },
   sansSceance: ['Compétition Licence Maîtres', 'Encadrants - Coachs', 'Officiels - bénévoles'],
   sansCarte: ['Officiels - bénévoles']
@@ -132,8 +132,8 @@ export const configurationSlice = createSlice({
       }
     },
     updateHeader: (state, action: PayloadAction<{ header: string; value: string }>) => {
-      if (Object.keys(state.headersComiti).includes(action.payload.header)) {
-        state.headersComiti[action.payload.header] = action.payload.value
+      if (Object.keys(state.headersMonClub).includes(action.payload.header)) {
+        state.headersMonClub[action.payload.header] = action.payload.value
       } else {
         console.error(`Unknown header in updateHeader: ${action.payload.header}`)
       }
@@ -198,4 +198,5 @@ export const selectPrintDelay = (state: RootState) => state.configuration.printD
 export const selectSimulatePrint = (state: RootState) => state.configuration.simulatePrint
 export const selectAliasGroupes = (state: RootState) => state.configuration.aliasGroupes
 export const selectAliasPiscines = (state: RootState) => state.configuration.aliasPiscines
-export const selectHeadersComiti = (state: RootState) => state.configuration.headersComiti
+// export const selectHeadersComiti = (state: RootState) => state.configuration.headersComiti
+export const selectHeadersMonClub = (state: RootState) => state.configuration.headersMonClub
