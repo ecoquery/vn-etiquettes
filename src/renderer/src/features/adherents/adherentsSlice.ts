@@ -121,7 +121,7 @@ export const viderAdherents: AppThunk = (dispatch, _getState) => {
 
 export const creneauAfficheable =
   (activites: Record<string, Activite>, aliasPiscines: Record<string, Alias>) => (c: Creneau) =>
-    !aliasPiscines[c.lieu ?? '']?.ignore && !activites[c.activite]?.sanscarte
+    !aliasPiscines[c?.lieu ?? '']?.ignore && !activites[c?.activite ?? '']?.sanscarte
 
 
 /**

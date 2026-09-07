@@ -6,8 +6,9 @@ out
 *.log*
 .envrc
 VN-Cartes*.ods
-Adhérents.csv
-Adhérents.xlsx
-Créneaux.csv
-Créneaux.numbers
-Créneaux.xlsx
+Adhérents*.csv
+Adhérents*.xlsx
+Adhérents*.numbers
+Créneaux*.csv
+Créneaux*.numbers
+Créneaux*.xlsx

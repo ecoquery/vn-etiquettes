@@ -193,6 +193,12 @@ export const saveCreneaux: AppThunk = (_dispatch, getState) => {
 export const loadCreneaux: AppThunk = (dispatch, _getState) => {
   const jsonData = localStorage.getItem(creneauxLocalStorageKey)
   const creneauxData = JSON.parse(jsonData ?? JSON.stringify(initialState)) as CreneauxState
+  if (!creneauxData.activites) {
+    creneauxData.activites = {}
+  }
+  if (!creneauxData.creneaux) {
+    creneauxData.creneaux = {}
+  }
   dispatch(creneauxSlice.actions.updateCreneauxData(creneauxData))
 }
 

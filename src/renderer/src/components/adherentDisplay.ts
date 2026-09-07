@@ -12,7 +12,7 @@ export interface AdherentDisplay {
 
 // FIXME: cas des activites sans carte
 export const creneauDisplay = (aliasPiscines: Record<string, Alias>) => (c: Creneau) =>
-  `${c.jour} ${c.debut} - ${aliasPiscines[c.lieu ?? '']?.replacement ?? c.lieu}`
+  `${c?.jour} ${c?.debut} - ${aliasPiscines[c?.lieu ?? '']?.replacement ?? c?.lieu}`
 
 export const buildAdherentDisplay =
   (
