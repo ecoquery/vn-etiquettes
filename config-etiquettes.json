@@ -1,7 +1,7 @@
 {
   "annee": "2026-2027",
   "printDelay": 2,
-  "simulatePrint": true,
+  "simulatePrint": false,
   "aliasGroupes": {
     "ADU-CSE-BPCESI": {
       "ignore": false,
@@ -64,22 +64,6 @@
     "Place Lazare Goujon, 69100, Villeurbanne": "Piscine des Gratte Ciel",
     "Place Lazar Goujon, 69100, Villeurbanne": "Piscine des Gratte Ciel"
   },
-  "headersMonClub": {
-    "cNomCreneau": "Nom du créneau",
-    "cNomActivite": "Nom",
-    "cDateDebut": "Date de début du créneau",
-    "cHeureDebut": "Heure",
-    "cAdresse": "Adresse",
-    "cNomAdherent": "Adhérents"
-  },
-  "sansSceance": [
-    "Compétition Licence Maîtres",
-    "Encadrants - Coachs",
-    "Officiels - bénévoles"
-  ],
-  "sansCarte": [
-    "Officiels - bénévoles"
-  ],
   "headersComiti": {
     "cNumeroOffre": "Numéro offre",
     "cCategorie": "Catégorie",
@@ -89,5 +73,15 @@
     "cNom": "Nom",
     "cPrenom": "Prénom",
     "cDateInscription": "Date d'inscription"
-  }
+  },
+  "headersMonClub": {
+    "cNomCreneau": "Nom du créneau",
+    "cNomActivite": "Nom",
+    "cDateDebut": "Date de début du créneau",
+    "cHeureDebut": "Heure",
+    "cAdresse": "Adresse",
+    "cNomAdherent": "Adhérents"
+  },
+  "sansSceance": ["Compétition Licence Maîtres", "Encadrants - Coachs", "Officiels - bénévoles"],
+  "sansCarte": ["Officiels - bénévoles"]
 }
