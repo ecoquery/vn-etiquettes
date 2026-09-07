@@ -14,6 +14,7 @@ import { styled } from '@mui/material/styles'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
+import { supprimerAdherents } from '../features/adherents/adherentsSlice'
 import {
   defaultHeadersMonClub,
   exportConfiguration,
@@ -84,6 +85,10 @@ export const ConfigurationPanel = () => {
   const handleExport = async () => {
     const fileHandle = await globalThis.showSaveFilePicker(saveFileOptions)
     dispatch(exportConfiguration(fileHandle))
+  }
+
+  const handleSupprimerAdherents = async () => {
+    dispatch(supprimerAdherents)
   }
 
   const general = () => (
@@ -266,7 +271,7 @@ export const ConfigurationPanel = () => {
           <Button variant="contained" onClick={handleExport}>
             Exporter
           </Button>
-          <Button variant="contained" color="error">
+          <Button variant="contained" color="error" onClick={handleSupprimerAdherents}>
             Supprimer les adhérents
           </Button>
         </Stack>

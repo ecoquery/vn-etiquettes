@@ -1,9 +1,9 @@
 import type { SelectChangeEvent } from '@mui/material'
 import { FormControl, InputLabel, MenuItem, Select, Stack } from '@mui/material'
-import { selectAliasPiscines } from '@renderer/features/configuration/configurationSlice'
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { creneauAfficheable, selectAdherents } from '../features/adherents/adherentsSlice'
+import { selectAliasPiscines } from '../features/configuration/configurationSlice'
 import {
   compareActivite,
   compareCreneaux,

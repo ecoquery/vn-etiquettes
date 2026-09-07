@@ -72,6 +72,7 @@ export const adherentsSlice = createSlice({
   reducers: {
     updateAdherentsData: (state, action: PayloadAction<AdherentsState>) => {
       Object.assign(state, action.payload)
+      console.log('Assigned adherents')
     },
     setStatut: (state, action: PayloadAction<{ nom: string; statut: Statut }>) => {
       const nom = action.payload.nom
@@ -80,6 +81,9 @@ export const adherentsSlice = createSlice({
       } else {
         console.log("Erreur, l'adhérent n'a pas été trouvé: ", nom)
       }
+    },
+    supprimerAdherents: (state, action: PayloadAction<void>) => {
+      state.adherents = {}
     }
   }
 })
@@ -167,6 +171,11 @@ export const importAdherentsWithData =
     dispatch(adherentsSlice.actions.updateAdherentsData({ adherents }))
     dispatch(saveAdherents)
   }
+
+export const supprimerAdherents = (dispatch: AppDispatch, getState: () => RootState) => {
+  dispatch(adherentsSlice.actions.supprimerAdherents())
+  dispatch(saveAdherents)
+}
 
 export default adherentsSlice.reducer
 

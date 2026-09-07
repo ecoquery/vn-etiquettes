@@ -1,5 +1,5 @@
 import { Grid, Stack } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch } from '../app/store'
 import { importAdherentsWithData, selectAdherents } from '../features/adherents/adherentsSlice'
@@ -18,11 +18,18 @@ const GestionAdherents = () => {
   const activites = useSelector(selectActivites)
   const aliasPiscines = useSelector(selectAliasPiscines)
 
+  console.log('Refreshed GestionAdherents', adherents)
+
   const adherentsVisibles = Object.values(adherents)
     .map(buildAdherentDisplay(creneaux, activites, aliasPiscines))
     .filter((a) => a.affiche)
     .toSorted(compareAdherentDisplay)
   const [selectedAdherents, setSelectedAdherents] = useState(adherentsVisibles.map((a) => a.id))
+
+  useEffect(() => {
+    setSelectedAdherents(adherentsVisibles.map((a) => a.id))
+  }, [adherents])
+
   return (
     <Grid container spacing={2}>
       <Grid size={8}>
